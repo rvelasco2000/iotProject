@@ -22,6 +22,7 @@ build/cooja/obj/sensor-node.o: sensor-node.c \
  /home/riccardo/contiki-ng/arch/platform/cooja/./sys/cooja_mt.h \
  /home/riccardo/contiki-ng/os/sys/pt.h \
  /home/riccardo/contiki-ng/os/sys/clock.h \
+ /home/riccardo/contiki-ng/os/lib/cbor.h \
  /home/riccardo/contiki-ng/os/net/app-layer/coap/coap-engine.h \
  /home/riccardo/contiki-ng/os/net/app-layer/coap/coap.h \
  /home/riccardo/contiki-ng/os/net/app-layer/coap/coap-constants.h \
@@ -64,6 +65,7 @@ build/cooja/obj/sensor-node.o: sensor-node.c \
 /home/riccardo/contiki-ng/arch/platform/cooja/./sys/cooja_mt.h:
 /home/riccardo/contiki-ng/os/sys/pt.h:
 /home/riccardo/contiki-ng/os/sys/clock.h:
+/home/riccardo/contiki-ng/os/lib/cbor.h:
 /home/riccardo/contiki-ng/os/net/app-layer/coap/coap-engine.h:
 /home/riccardo/contiki-ng/os/net/app-layer/coap/coap.h:
 /home/riccardo/contiki-ng/os/net/app-layer/coap/coap-constants.h:
