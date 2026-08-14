@@ -1,5 +1,6 @@
-build/cooja/obj/eeprom.o: ../../arch/platform/cooja/dev/eeprom.c \
- ../../os/services/rpl-border-router/module-macros.h \
- ../../os/dev/eeprom.h
-../../os/services/rpl-border-router/module-macros.h:
-../../os/dev/eeprom.h:
+build/cooja/obj/eeprom.o: \
+ /home/riccardo/contiki-ng/arch/platform/cooja/dev/eeprom.c \
+ /home/riccardo/contiki-ng/os/services/rpl-border-router/module-macros.h \
+ /home/riccardo/contiki-ng/os/dev/eeprom.h
+/home/riccardo/contiki-ng/os/services/rpl-border-router/module-macros.h:
+/home/riccardo/contiki-ng/os/dev/eeprom.h:

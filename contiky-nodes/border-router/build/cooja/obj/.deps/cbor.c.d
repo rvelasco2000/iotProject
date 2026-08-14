@@ -1,4 +1,5 @@
-build/cooja/obj/cbor.o: ../../os/lib/cbor.c \
- ../../os/services/rpl-border-router/module-macros.h ../../os/lib/cbor.h
-../../os/services/rpl-border-router/module-macros.h:
-../../os/lib/cbor.h:
+build/cooja/obj/cbor.o: /home/riccardo/contiki-ng/os/lib/cbor.c \
+ /home/riccardo/contiki-ng/os/services/rpl-border-router/module-macros.h \
+ /home/riccardo/contiki-ng/os/lib/cbor.h
+/home/riccardo/contiki-ng/os/services/rpl-border-router/module-macros.h:
+/home/riccardo/contiki-ng/os/lib/cbor.h:

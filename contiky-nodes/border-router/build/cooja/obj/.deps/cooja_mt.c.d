@@ -1,5 +1,6 @@
-build/cooja/obj/cooja_mt.o: ../../arch/platform/cooja/sys/cooja_mt.c \
- ../../os/services/rpl-border-router/module-macros.h \
- ../../arch/platform/cooja/./sys/cooja_mt.h
-../../os/services/rpl-border-router/module-macros.h:
-../../arch/platform/cooja/./sys/cooja_mt.h:
+build/cooja/obj/cooja_mt.o: \
+ /home/riccardo/contiki-ng/arch/platform/cooja/sys/cooja_mt.c \
+ /home/riccardo/contiki-ng/os/services/rpl-border-router/module-macros.h \
+ /home/riccardo/contiki-ng/arch/platform/cooja/./sys/cooja_mt.h
+/home/riccardo/contiki-ng/os/services/rpl-border-router/module-macros.h:
+/home/riccardo/contiki-ng/arch/platform/cooja/./sys/cooja_mt.h:

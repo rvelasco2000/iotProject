@@ -1,113 +1,150 @@
-build/cooja/obj/queuebuf.o: ../../os/net/queuebuf.c \
- ../../os/services/rpl-border-router/module-macros.h \
- ../../os/contiki-net.h ../../os/contiki.h \
- ../../arch/platform/cooja/./contiki-conf.h project-conf.h \
- ../../os/contiki-default-conf.h ../../os/sys/process.h ../../os/sys/pt.h \
- ../../os/sys/lc.h ../../os/sys/lc-switch.h ../../os/sys/cc.h \
- ../../os/contiki.h ../../os/sys/autostart.h ../../os/sys/process.h \
- ../../os/sys/timer.h ../../os/sys/clock.h ../../os/sys/ctimer.h \
- ../../os/sys/etimer.h ../../os/sys/etimer.h ../../os/sys/rtimer.h \
- ../../os/dev/watchdog.h ../../arch/platform/cooja/./rtimer-arch.h \
- ../../arch/platform/cooja/./lib/simEnvChange.h \
- ../../arch/platform/cooja/./sys/cooja_mt.h ../../os/sys/pt.h \
- ../../os/sys/clock.h ../../os/net/ipv6/tcpip.h ../../os/net/ipv6/uip.h \
- ../../os/net/ipv6/uipopt.h ../../os/net/ipv6/uipbuf.h \
- ../../os/net/linkaddr.h ../../os/net/ipv6/tcpip.h \
- ../../os/net/ipv6/uip.h ../../os/net/ipv6/uiplib.h \
- ../../os/net/ipv6/uip-udp-packet.h ../../os/net/ipv6/simple-udp.h \
- ../../os/net/ipv6/uip-nameserver.h ../../os/net/routing/routing.h \
- ../../os/net/ipv6/uip-ds6-nbr.h ../../os/net/ipv6/uip-nd6.h \
- ../../os/sys/stimer.h ../../os/net/nbr-table.h ../../os/net/netstack.h \
- ../../os/net/mac/mac.h ../../os/dev/radio.h \
- ../../os/net/mac/framer/framer.h ../../os/net/ipv6/uip-packetqueue.h \
- ../../os/sys/ctimer.h ../../os/net/ipv6/uip-ds6-route.h \
- ../../os/lib/list.h ../../os/net/ipv6/uip-sr.h \
- ../../os/net/ipv6/uip-icmp6.h ../../os/net/ipv6/uip-ds6.h \
- ../../os/net/ipv6/multicast/uip-mcast6.h \
- ../../os/net/ipv6/multicast/uip-mcast6-engines.h \
- ../../os/net/ipv6/multicast/uip-mcast6-route.h \
- ../../os/net/ipv6/multicast/smrf.h ../../os/net/ipv6/multicast/esmrf.h \
- ../../os/net/ipv6/multicast/roll-tm.h \
- ../../os/net/ipv6/multicast/uip-mcast6-stats.h \
- ../../os/net/ipv6/multicast/mpl.h ../../os/net/ipv6/psock.h \
- ../../os/contiki-lib.h ../../os/lib/list.h ../../os/lib/memb.h \
- ../../os/lib/random.h ../../os/net/ipv6/udp-socket.h \
- ../../os/net/ipv6/tcp-socket.h ../../os/net/ipv6/uip.h \
- ../../os/net/netstack.h ../../os/net/queuebuf.h ../../os/net/packetbuf.h \
- ../../os/net/mac/llsec802154.h ../../os/net/mac/csma/csma-security.h \
- ../../os/net/mac/tsch/tsch-conf.h
-../../os/services/rpl-border-router/module-macros.h:
-../../os/contiki-net.h:
-../../os/contiki.h:
-../../arch/platform/cooja/./contiki-conf.h:
+build/cooja/obj/queuebuf.o: /home/riccardo/contiki-ng/os/net/queuebuf.c \
+ /home/riccardo/contiki-ng/os/services/rpl-border-router/module-macros.h \
+ /home/riccardo/contiki-ng/os/contiki-net.h \
+ /home/riccardo/contiki-ng/os/contiki.h \
+ /home/riccardo/contiki-ng/arch/platform/cooja/./contiki-conf.h \
+ project-conf.h /home/riccardo/contiki-ng/os/contiki-default-conf.h \
+ /home/riccardo/contiki-ng/os/sys/process.h \
+ /home/riccardo/contiki-ng/os/sys/pt.h \
+ /home/riccardo/contiki-ng/os/sys/lc.h \
+ /home/riccardo/contiki-ng/os/sys/lc-switch.h \
+ /home/riccardo/contiki-ng/os/sys/cc.h \
+ /home/riccardo/contiki-ng/os/contiki.h \
+ /home/riccardo/contiki-ng/os/sys/autostart.h \
+ /home/riccardo/contiki-ng/os/sys/process.h \
+ /home/riccardo/contiki-ng/os/sys/timer.h \
+ /home/riccardo/contiki-ng/os/sys/clock.h \
+ /home/riccardo/contiki-ng/os/sys/ctimer.h \
+ /home/riccardo/contiki-ng/os/sys/etimer.h \
+ /home/riccardo/contiki-ng/os/sys/etimer.h \
+ /home/riccardo/contiki-ng/os/sys/rtimer.h \
+ /home/riccardo/contiki-ng/os/dev/watchdog.h \
+ /home/riccardo/contiki-ng/arch/platform/cooja/./rtimer-arch.h \
+ /home/riccardo/contiki-ng/arch/platform/cooja/./lib/simEnvChange.h \
+ /home/riccardo/contiki-ng/arch/platform/cooja/./sys/cooja_mt.h \
+ /home/riccardo/contiki-ng/os/sys/pt.h \
+ /home/riccardo/contiki-ng/os/sys/clock.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/tcpip.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/uip.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/uipopt.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/uipbuf.h \
+ /home/riccardo/contiki-ng/os/net/linkaddr.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/tcpip.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/uip.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/uiplib.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/uip-udp-packet.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/simple-udp.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/uip-nameserver.h \
+ /home/riccardo/contiki-ng/os/net/routing/routing.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/uip-ds6-nbr.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/uip-nd6.h \
+ /home/riccardo/contiki-ng/os/sys/stimer.h \
+ /home/riccardo/contiki-ng/os/net/nbr-table.h \
+ /home/riccardo/contiki-ng/os/net/netstack.h \
+ /home/riccardo/contiki-ng/os/net/mac/mac.h \
+ /home/riccardo/contiki-ng/os/dev/radio.h \
+ /home/riccardo/contiki-ng/os/net/mac/framer/framer.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/uip-packetqueue.h \
+ /home/riccardo/contiki-ng/os/sys/ctimer.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/uip-ds6-route.h \
+ /home/riccardo/contiki-ng/os/lib/list.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/uip-sr.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/uip-icmp6.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/uip-ds6.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/multicast/uip-mcast6.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/multicast/uip-mcast6-engines.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/multicast/uip-mcast6-route.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/multicast/smrf.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/multicast/esmrf.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/multicast/roll-tm.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/multicast/uip-mcast6-stats.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/multicast/mpl.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/psock.h \
+ /home/riccardo/contiki-ng/os/contiki-lib.h \
+ /home/riccardo/contiki-ng/os/lib/list.h \
+ /home/riccardo/contiki-ng/os/lib/memb.h \
+ /home/riccardo/contiki-ng/os/lib/random.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/udp-socket.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/tcp-socket.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/uip.h \
+ /home/riccardo/contiki-ng/os/net/netstack.h \
+ /home/riccardo/contiki-ng/os/net/queuebuf.h \
+ /home/riccardo/contiki-ng/os/net/packetbuf.h \
+ /home/riccardo/contiki-ng/os/net/mac/llsec802154.h \
+ /home/riccardo/contiki-ng/os/net/mac/csma/csma-security.h \
+ /home/riccardo/contiki-ng/os/net/mac/tsch/tsch-conf.h
+/home/riccardo/contiki-ng/os/services/rpl-border-router/module-macros.h:
+/home/riccardo/contiki-ng/os/contiki-net.h:
+/home/riccardo/contiki-ng/os/contiki.h:
+/home/riccardo/contiki-ng/arch/platform/cooja/./contiki-conf.h:
 project-conf.h:
-../../os/contiki-default-conf.h:
-../../os/sys/process.h:
-../../os/sys/pt.h:
-../../os/sys/lc.h:
-../../os/sys/lc-switch.h:
-../../os/sys/cc.h:
-../../os/contiki.h:
-../../os/sys/autostart.h:
-../../os/sys/process.h:
-../../os/sys/timer.h:
-../../os/sys/clock.h:
-../../os/sys/ctimer.h:
-../../os/sys/etimer.h:
-../../os/sys/etimer.h:
-../../os/sys/rtimer.h:
-../../os/dev/watchdog.h:
-../../arch/platform/cooja/./rtimer-arch.h:
-../../arch/platform/cooja/./lib/simEnvChange.h:
-../../arch/platform/cooja/./sys/cooja_mt.h:
-../../os/sys/pt.h:
-../../os/sys/clock.h:
-../../os/net/ipv6/tcpip.h:
-../../os/net/ipv6/uip.h:
-../../os/net/ipv6/uipopt.h:
-../../os/net/ipv6/uipbuf.h:
-../../os/net/linkaddr.h:
-../../os/net/ipv6/tcpip.h:
-../../os/net/ipv6/uip.h:
-../../os/net/ipv6/uiplib.h:
-../../os/net/ipv6/uip-udp-packet.h:
-../../os/net/ipv6/simple-udp.h:
-../../os/net/ipv6/uip-nameserver.h:
-../../os/net/routing/routing.h:
-../../os/net/ipv6/uip-ds6-nbr.h:
-../../os/net/ipv6/uip-nd6.h:
-../../os/sys/stimer.h:
-../../os/net/nbr-table.h:
-../../os/net/netstack.h:
-../../os/net/mac/mac.h:
-../../os/dev/radio.h:
-../../os/net/mac/framer/framer.h:
-../../os/net/ipv6/uip-packetqueue.h:
-../../os/sys/ctimer.h:
-../../os/net/ipv6/uip-ds6-route.h:
-../../os/lib/list.h:
-../../os/net/ipv6/uip-sr.h:
-../../os/net/ipv6/uip-icmp6.h:
-../../os/net/ipv6/uip-ds6.h:
-../../os/net/ipv6/multicast/uip-mcast6.h:
-../../os/net/ipv6/multicast/uip-mcast6-engines.h:
-../../os/net/ipv6/multicast/uip-mcast6-route.h:
-../../os/net/ipv6/multicast/smrf.h:
-../../os/net/ipv6/multicast/esmrf.h:
-../../os/net/ipv6/multicast/roll-tm.h:
-../../os/net/ipv6/multicast/uip-mcast6-stats.h:
-../../os/net/ipv6/multicast/mpl.h:
-../../os/net/ipv6/psock.h:
-../../os/contiki-lib.h:
-../../os/lib/list.h:
-../../os/lib/memb.h:
-../../os/lib/random.h:
-../../os/net/ipv6/udp-socket.h:
-../../os/net/ipv6/tcp-socket.h:
-../../os/net/ipv6/uip.h:
-../../os/net/netstack.h:
-../../os/net/queuebuf.h:
-../../os/net/packetbuf.h:
-../../os/net/mac/llsec802154.h:
-../../os/net/mac/csma/csma-security.h:
-../../os/net/mac/tsch/tsch-conf.h:
+/home/riccardo/contiki-ng/os/contiki-default-conf.h:
+/home/riccardo/contiki-ng/os/sys/process.h:
+/home/riccardo/contiki-ng/os/sys/pt.h:
+/home/riccardo/contiki-ng/os/sys/lc.h:
+/home/riccardo/contiki-ng/os/sys/lc-switch.h:
+/home/riccardo/contiki-ng/os/sys/cc.h:
+/home/riccardo/contiki-ng/os/contiki.h:
+/home/riccardo/contiki-ng/os/sys/autostart.h:
+/home/riccardo/contiki-ng/os/sys/process.h:
+/home/riccardo/contiki-ng/os/sys/timer.h:
+/home/riccardo/contiki-ng/os/sys/clock.h:
+/home/riccardo/contiki-ng/os/sys/ctimer.h:
+/home/riccardo/contiki-ng/os/sys/etimer.h:
+/home/riccardo/contiki-ng/os/sys/etimer.h:
+/home/riccardo/contiki-ng/os/sys/rtimer.h:
+/home/riccardo/contiki-ng/os/dev/watchdog.h:
+/home/riccardo/contiki-ng/arch/platform/cooja/./rtimer-arch.h:
+/home/riccardo/contiki-ng/arch/platform/cooja/./lib/simEnvChange.h:
+/home/riccardo/contiki-ng/arch/platform/cooja/./sys/cooja_mt.h:
+/home/riccardo/contiki-ng/os/sys/pt.h:
+/home/riccardo/contiki-ng/os/sys/clock.h:
+/home/riccardo/contiki-ng/os/net/ipv6/tcpip.h:
+/home/riccardo/contiki-ng/os/net/ipv6/uip.h:
+/home/riccardo/contiki-ng/os/net/ipv6/uipopt.h:
+/home/riccardo/contiki-ng/os/net/ipv6/uipbuf.h:
+/home/riccardo/contiki-ng/os/net/linkaddr.h:
+/home/riccardo/contiki-ng/os/net/ipv6/tcpip.h:
+/home/riccardo/contiki-ng/os/net/ipv6/uip.h:
+/home/riccardo/contiki-ng/os/net/ipv6/uiplib.h:
+/home/riccardo/contiki-ng/os/net/ipv6/uip-udp-packet.h:
+/home/riccardo/contiki-ng/os/net/ipv6/simple-udp.h:
+/home/riccardo/contiki-ng/os/net/ipv6/uip-nameserver.h:
+/home/riccardo/contiki-ng/os/net/routing/routing.h:
+/home/riccardo/contiki-ng/os/net/ipv6/uip-ds6-nbr.h:
+/home/riccardo/contiki-ng/os/net/ipv6/uip-nd6.h:
+/home/riccardo/contiki-ng/os/sys/stimer.h:
+/home/riccardo/contiki-ng/os/net/nbr-table.h:
+/home/riccardo/contiki-ng/os/net/netstack.h:
+/home/riccardo/contiki-ng/os/net/mac/mac.h:
+/home/riccardo/contiki-ng/os/dev/radio.h:
+/home/riccardo/contiki-ng/os/net/mac/framer/framer.h:
+/home/riccardo/contiki-ng/os/net/ipv6/uip-packetqueue.h:
+/home/riccardo/contiki-ng/os/sys/ctimer.h:
+/home/riccardo/contiki-ng/os/net/ipv6/uip-ds6-route.h:
+/home/riccardo/contiki-ng/os/lib/list.h:
+/home/riccardo/contiki-ng/os/net/ipv6/uip-sr.h:
+/home/riccardo/contiki-ng/os/net/ipv6/uip-icmp6.h:
+/home/riccardo/contiki-ng/os/net/ipv6/uip-ds6.h:
+/home/riccardo/contiki-ng/os/net/ipv6/multicast/uip-mcast6.h:
+/home/riccardo/contiki-ng/os/net/ipv6/multicast/uip-mcast6-engines.h:
+/home/riccardo/contiki-ng/os/net/ipv6/multicast/uip-mcast6-route.h:
+/home/riccardo/contiki-ng/os/net/ipv6/multicast/smrf.h:
+/home/riccardo/contiki-ng/os/net/ipv6/multicast/esmrf.h:
+/home/riccardo/contiki-ng/os/net/ipv6/multicast/roll-tm.h:
+/home/riccardo/contiki-ng/os/net/ipv6/multicast/uip-mcast6-stats.h:
+/home/riccardo/contiki-ng/os/net/ipv6/multicast/mpl.h:
+/home/riccardo/contiki-ng/os/net/ipv6/psock.h:
+/home/riccardo/contiki-ng/os/contiki-lib.h:
+/home/riccardo/contiki-ng/os/lib/list.h:
+/home/riccardo/contiki-ng/os/lib/memb.h:
+/home/riccardo/contiki-ng/os/lib/random.h:
+/home/riccardo/contiki-ng/os/net/ipv6/udp-socket.h:
+/home/riccardo/contiki-ng/os/net/ipv6/tcp-socket.h:
+/home/riccardo/contiki-ng/os/net/ipv6/uip.h:
+/home/riccardo/contiki-ng/os/net/netstack.h:
+/home/riccardo/contiki-ng/os/net/queuebuf.h:
+/home/riccardo/contiki-ng/os/net/packetbuf.h:
+/home/riccardo/contiki-ng/os/net/mac/llsec802154.h:
+/home/riccardo/contiki-ng/os/net/mac/csma/csma-security.h:
+/home/riccardo/contiki-ng/os/net/mac/tsch/tsch-conf.h:
