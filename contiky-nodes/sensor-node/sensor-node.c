@@ -15,7 +15,7 @@ PROCESS(sensor_node, "Sensor Node");
 AUTOSTART_PROCESSES(&sensor_node);
 
 
-static clock_time_t interval=CLOCK_SECOND*5;
+static clock_time_t interval=CLOCK_SECOND*30;
 static int spo2=95;
 static int respiration_rate=20;
 static int heart_rate=70;
