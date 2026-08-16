@@ -2,38 +2,78 @@ import asyncio
 from aiocoap import *
 import cbor2
 import json
+from datetime import datetime
+import os
 
-async def main():
-    print("Avvio client CoAP. In attesa dei dati vitali...")
-    protocol = await Context.create_client_context()
+def load_configuration(filename="config.json"):
+    if not os.path.exists(filename):
+        raise FileNotFoundError(f"Configuration file '{filename}' not found!")
+    with open(filename, "r") as f:
+        return json.load(f)
 
-    # Assicurati che l'IP sia quello del tuo sensore attuale
-    sensor_ip = "fd00::202:2:2:2"
-    uri = f"coap://[{sensor_ip}]/vital_signs"
-
-    # Richiesta Observe
+async def observe_sensor(protocol, app_name, sensor_id, patient_name, ipv6):
+    """Handles the CoAP Observe connection for a single patient's sensor"""
+    resource_path = "vital_signs"
+    uri = f"coap://[{ipv6}]/{resource_path}"
     request = Message(code=GET, uri=uri, observe=0)
     pr = protocol.request(request)
 
     try:
-        # 1. Lettura del primo pacchetto
-        primo_pacchetto = await pr.response
-        dati_cbor = cbor2.loads(primo_pacchetto.payload)
-        
-        print("\n[ PRIMA RISPOSTA ] - Informazioni complete:")
-        # json.dumps con indent=4 stampa il dizionario in modo molto leggibile
-        print(json.dumps(dati_cbor, indent=4))
-
-        # 2. Ciclo infinito di ascolto per le notifiche
-        print("\n--- In attesa delle notifiche in tempo reale ---\n")
-        async for pacchetto in pr.observation:
-            dati_cbor = cbor2.loads(pacchetto.payload)
+        first_response = await pr.response
+        if not first_response.code.is_successful():
+            print(f"[ERROR] {patient_name} (Node {sensor_id}) replied with CoAP Response: {first_response.code}")
+        elif len(first_response.payload) > 0:
+            reception_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            cbor_data = cbor2.loads(first_response.payload)
             
-            print("\n[ NOTIFICA RICEVUTA ]")
-            print(json.dumps(dati_cbor, indent=4))
+            print(f"\n=== FIRST RESPONSE [{app_name}] ===")
+            print(f"Patient: {patient_name} (ID: {sensor_id})")
+            print(f"IPv6: {ipv6}")
+            print(f"Received at: {reception_time}")
+            print(json.dumps(cbor_data, indent=4))
+        else:
+            print(f"[WARNING] {patient_name} (Node {sensor_id}): Payload is empty.")
+        async for packet in pr.observation:
+            if len(packet.payload) > 0:
+                reception_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                cbor_data = cbor2.loads(packet.payload)
+                print(f"\n=== NOTIFICATION [{app_name}] ===")
+                print(f"Patient: {patient_name} (ID: {sensor_id})")
+                print(f"Received at: {reception_time}")
+                print(json.dumps(cbor_data, indent=4))
 
     except Exception as e:
-        print(f"Errore di connessione o decodifica: {e}")
+        print(f"[COMMUNICATION ERROR] Patient {patient_name} (Node {sensor_id}): {e}")
+
+
+async def main():
+    try:
+        config = load_configuration()
+        app_name = config.get("applicationName", "Unknown Application")
+        sensor_nodes = config.get("sensor_nodes", [])
+    except Exception as e:
+        print(f"Error loading the configuration file: {e}")
+        return
+
+    if not sensor_nodes:
+        print("No sensor nodes configured in config.json.")
+        return
+
+    print(f"Starting '{app_name}' monitoring system...")
+    print(f"Configured to monitor {len(sensor_nodes)} patient(s) concurrently.\n")
+    
+    protocol = await Context.create_client_context()
+    tasks = [
+        observe_sensor(
+            protocol, 
+            app_name, 
+            node.get("id"), 
+            node.get("patient_name"), 
+            node.get("ipv6")
+        )
+        for node in sensor_nodes
+    ]
+    await asyncio.gather(*tasks)
 
 if __name__ == "__main__":
     asyncio.run(main())
