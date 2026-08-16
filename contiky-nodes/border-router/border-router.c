@@ -32,7 +32,7 @@
 
 #include "contiki.h"
 
-/* Log configuration */
+/*Log configuration */
 #include "sys/log.h"
 #define LOG_MODULE "RPL BR"
 #define LOG_LEVEL LOG_LEVEL_INFO

@@ -20,8 +20,25 @@
 #endif
 
 /* 4. Aumenta i log per vedere cosa succede durante il debug */
-#define LOG_CONF_LEVEL_RPL                         LOG_LEVEL_DBG
-#define LOG_CONF_LEVEL_TCPIP                       LOG_LEVEL_DBG
-#define SLIP_CONF_LOG_LEVEL                        LOG_LEVEL_DBG
+//#define LOG_CONF_LEVEL_RPL                         LOG_LEVEL_DBG
+//#define LOG_CONF_LEVEL_TCPIP                       LOG_LEVEL_DBG
+//#define SLIP_CONF_LOG_LEVEL                        LOG_LEVEL_DBG
+#undef LOG_CONF_LEVEL_ALL
+#define LOG_CONF_LEVEL_ALL 0
+
+#undef LOG_CONF_LEVEL_IPV6
+#define LOG_CONF_LEVEL_IPV6 0
+
+#undef LOG_CONF_LEVEL_RPL
+#define LOG_CONF_LEVEL_RPL 0
+
+#undef LOG_CONF_LEVEL_TCPIP
+#define LOG_CONF_LEVEL_TCPIP 0
+
+#undef LOG_CONF_LEVEL_6LOWPAN
+#define LOG_CONF_LEVEL_6LOWPAN 0
+
+#undef LOG_CONF_LEVEL_MAC
+#define LOG_CONF_LEVEL_MAC 0
 
 #endif /* PROJECT_CONF_H_ */
