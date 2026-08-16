@@ -1,0 +1,10 @@
+{
+    "applicationName":"COPD ventilator",
+    "sensor_nodes":[
+        {
+            "id":0,
+            "patient_name":"Mario Rossi",
+            "ipv6":"fd00::202:2:2:2"
+        }
+    ]
+}

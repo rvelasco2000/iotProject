@@ -42,8 +42,8 @@ static void res_get_handler(coap_message_t *request, coap_message_t *response, u
         cbor_write_text(&state, "bn", strlen("bn"));
         cbor_write_text(&state, SENSOR_NAME, strlen(SENSOR_NAME));
         //base time
-        cbor_write_text(&state, "bt", strlen("bt"));
-        cbor_write_unsigned(&state, clock_seconds());
+//        cbor_write_text(&state, "bt", strlen("bt"));
+//        cbor_write_unsigned(&state, clock_seconds());
         //array of vital signs
         cbor_write_text(&state, "e", strlen("e"));
         cbor_open_array(&state);
