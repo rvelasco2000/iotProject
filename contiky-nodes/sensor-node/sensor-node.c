@@ -23,7 +23,9 @@ extern coap_resource_t vital_signs_resource;
 
 static void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset){
     cbor_writer_state_t state;
+    
     cbor_init_writer(&state, buffer, preferred_size);
+/*
     cbor_open_map(&state);
         cbor_write_text(&state, "s", 1);
         cbor_write_unsigned(&state, spo2);
@@ -33,8 +35,8 @@ static void res_get_handler(coap_message_t *request, coap_message_t *response, u
         
         cbor_write_text(&state, "h", 1);
         cbor_write_unsigned(&state, heart_rate);
-    cbor_close_map(&state);
- /*
+    cbor_close_map(&state);*/
+
     cbor_open_map(&state);
         //base name
         cbor_write_text(&state, "bn", strlen("bn"));
@@ -55,26 +57,26 @@ static void res_get_handler(coap_message_t *request, coap_message_t *response, u
                 cbor_write_unsigned(&state, spo2);
             cbor_close_map(&state);
             //respiration rate
-//            cbor_open_map(&state);
-//                cbor_write_text(&state, "n", strlen("n"));
-//                cbor_write_text(&state, "resRate", strlen("resRate"));
-//                cbor_write_text(&state, "u", strlen("u"));
-//                cbor_write_text(&state, "b/min", strlen("b/min"));
-//                cbor_write_text(&state, "v", strlen("v"));
-//                cbor_write_unsigned(&state, respiration_rate);
-//            cbor_close_map(&state);
+            cbor_open_map(&state);
+                cbor_write_text(&state, "n", strlen("n"));
+                cbor_write_text(&state, "resRate", strlen("resRate"));
+                cbor_write_text(&state, "u", strlen("u"));
+                cbor_write_text(&state, "b/min", strlen("b/min"));
+                cbor_write_text(&state, "v", strlen("v"));
+                cbor_write_unsigned(&state, respiration_rate);
+            cbor_close_map(&state);
             //heart rate
-//            cbor_open_map(&state);
-//                cbor_write_text(&state, "n", strlen("n"));
-//                cbor_write_text(&state, "heartRate", strlen("heartRate"));
-//                cbor_write_text(&state, "u", strlen("u"));
-//                cbor_write_text(&state, "bpm", strlen("bpm"));
-//                cbor_write_text(&state, "v", strlen("v"));
-//                cbor_write_unsigned(&state, heart_rate);
-//            cbor_close_map(&state);
+            cbor_open_map(&state);
+                cbor_write_text(&state, "n", strlen("n"));
+                cbor_write_text(&state, "heartRate", strlen("heartRate"));
+                cbor_write_text(&state, "u", strlen("u"));
+                cbor_write_text(&state, "bpm", strlen("bpm"));
+                cbor_write_text(&state, "v", strlen("v"));
+                cbor_write_unsigned(&state, heart_rate);
+            cbor_close_map(&state);
         cbor_close_array(&state);
     cbor_close_map(&state);
- */
+
     size_t len = cbor_end_writer(&state);
     coap_set_header_content_format(response, APPLICATION_CBOR);
     coap_set_payload(response, buffer, len);
