@@ -1,5 +1,10 @@
 {
     "applicationName":"COPD ventilator",
+    "influxdb": {
+        "url": "http://localhost:8086",
+        "org": "unipi_iot",
+        "bucket": "vital_signs"
+    },
     "sensor_nodes":[
         {
             "id":0,
