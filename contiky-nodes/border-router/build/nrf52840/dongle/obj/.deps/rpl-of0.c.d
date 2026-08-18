@@ -1,301 +1,332 @@
 build/nrf52840/dongle/obj/rpl-of0.o: \
- ../../os/net/routing/rpl-lite/rpl-of0.c \
- ../../os/services/rpl-border-router/module-macros.h \
- ../../os/net/routing/rpl-lite/rpl.h ../../os/net/ipv6/uip.h \
- ../../os/net/ipv6/uipopt.h ../../os/contiki.h \
- ../../arch/platform/nrf52840/./contiki-conf.h project-conf.h \
- ../../arch/platform/nrf52840/dongle/nrf52840-board-def.h \
- ../../arch/cpu/nrf52840/lib/nrf52-sdk/components/boards/boards.h \
- ../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/hal/nrf_gpio.h \
- ../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/nrfx.h \
- ../../arch/cpu/nrf52840/lib/nrf52-sdk/integration/nrfx/nrfx_config.h \
- ../../arch/platform/nrf52840/config/sdk_config.h \
- ../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/drivers/nrfx_common.h \
- ../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/nrf.h \
- ../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/nrf52840.h \
- ../../arch/cpu/nrf52840/../arm/CMSIS/CMSIS/Core/Include/core_cm4.h \
- ../../arch/cpu/nrf52840/../arm/CMSIS/CMSIS/Core/Include/cmsis_version.h \
- ../../arch/cpu/nrf52840/../arm/CMSIS/CMSIS/Core/Include/cmsis_compiler.h \
- ../../arch/cpu/nrf52840/../arm/CMSIS/CMSIS/Core/Include/cmsis_gcc.h \
- ../../arch/cpu/nrf52840/../arm/CMSIS/CMSIS/Core/Include/mpu_armv7.h \
- ../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/system_nrf52840.h \
- ../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/system_nrf.h \
- ../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/nrf52840_bitfields.h \
- ../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/nrf51_to_nrf52840.h \
- ../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/nrf52_to_nrf52840.h \
- ../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/compiler_abstraction.h \
- ../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/nrf_peripherals.h \
- ../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/nrf52840_peripherals.h \
- ../../arch/cpu/nrf52840/lib/nrf52-sdk/integration/nrfx/nrfx_glue.h \
- ../../arch/cpu/nrf52840/lib/nrf52-sdk/integration/nrfx/legacy/apply_old_config.h \
- ../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/soc/nrfx_irqs.h \
- ../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/soc/nrfx_irqs_nrf52840.h \
- ../../arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/nrf_assert.h \
- ../../arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/app_util.h \
- ../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/compiler_abstraction.h \
- ../../arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/nordic_common.h \
- ../../arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/nordic_common.h \
- ../../arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/app_util_platform.h \
- ../../arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/nrf_assert.h \
- ../../arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/app_error.h \
- ../../arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/sdk_errors.h \
- ../../arch/cpu/nrf52840/lib/nrf52-sdk/components/drivers_nrf/nrf_soc_nosd/nrf_error.h \
- ../../arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/app_error_weak.h \
- ../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/soc/nrfx_coredep.h \
- ../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/soc/nrfx_atomic.h \
- ../../arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/sdk_errors.h \
- ../../arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/sdk_resources.h \
- ../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/drivers/nrfx_errors.h \
- ../../arch/cpu/nrf52840/lib/nrf52-sdk/components/boards/pca10059.h \
- ../../arch/cpu/nrf52840/./nrf52840-def.h \
- ../../arch/cpu/nrf52840/../arm/cortex-m/cm4/cm4-def.h \
- ../../arch/cpu/nrf52840/../arm/./arm-def.h \
- ../../arch/cpu/nrf52840/./nrf52840-conf.h \
- ../../os/contiki-default-conf.h ../../os/sys/process.h ../../os/sys/pt.h \
- ../../os/sys/lc.h ../../os/sys/lc-switch.h ../../os/sys/cc.h \
- ../../os/sys/autostart.h ../../os/sys/process.h ../../os/sys/timer.h \
- ../../os/sys/clock.h ../../os/sys/ctimer.h ../../os/sys/etimer.h \
- ../../os/sys/etimer.h ../../os/sys/rtimer.h ../../os/dev/watchdog.h \
- ../../arch/cpu/nrf52840/./rtimer-arch.h ../../os/sys/pt.h \
- ../../os/sys/clock.h ../../os/net/ipv6/uipbuf.h ../../os/net/linkaddr.h \
- ../../os/net/ipv6/tcpip.h ../../os/net/routing/rpl-lite/rpl-const.h \
- ../../os/net/routing/rpl-lite/rpl-conf.h \
- ../../os/net/routing/rpl-lite/rpl-types.h \
- ../../os/net/routing/rpl-lite/rpl-icmp6.h ../../os/net/ipv6/uip.h \
- ../../os/net/ipv6/uip-ds6.h ../../os/net/ipv6/multicast/uip-mcast6.h \
- ../../os/net/ipv6/multicast/uip-mcast6-engines.h \
- ../../os/net/ipv6/multicast/uip-mcast6-route.h \
- ../../os/net/ipv6/multicast/smrf.h ../../os/net/ipv6/multicast/esmrf.h \
- ../../os/net/ipv6/multicast/roll-tm.h \
- ../../os/net/ipv6/multicast/uip-mcast6-stats.h \
- ../../os/net/ipv6/multicast/mpl.h ../../os/sys/stimer.h \
- ../../os/net/ipv6/uip-nd6.h ../../os/net/ipv6/uip-ds6-nbr.h \
- ../../os/net/nbr-table.h ../../os/net/netstack.h ../../os/net/mac/mac.h \
- ../../os/dev/radio.h ../../os/net/mac/framer/framer.h \
- ../../os/net/ipv6/uip-ds6-route.h ../../os/lib/list.h \
- ../../os/net/ipv6/uip-ds6-nbr.h ../../os/net/routing/rpl-lite/rpl-dag.h \
- ../../os/net/routing/rpl-lite/rpl-dag-root.h \
- ../../os/net/routing/rpl-lite/rpl-neighbor.h ../../os/net/ipv6/uip-ds6.h \
- ../../os/sys/ctimer.h ../../os/net/routing/rpl-lite/rpl-ext-header.h \
- ../../os/net/routing/rpl-lite/rpl-timers.h ../../os/net/link-stats.h \
- ../../os/sys/log.h ../../os/sys/log-conf.h
+ /home/riccardo/contiki-ng/os/net/routing/rpl-lite/rpl-of0.c \
+ /home/riccardo/contiki-ng/os/services/rpl-border-router/module-macros.h \
+ /home/riccardo/contiki-ng/os/net/routing/rpl-lite/rpl.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/uip.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/uipopt.h \
+ /home/riccardo/contiki-ng/os/contiki.h \
+ /home/riccardo/contiki-ng/arch/platform/nrf52840/./contiki-conf.h \
+ project-conf.h \
+ /home/riccardo/contiki-ng/arch/platform/nrf52840/dongle/nrf52840-board-def.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/components/boards/boards.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/hal/nrf_gpio.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/nrfx.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/integration/nrfx/nrfx_config.h \
+ /home/riccardo/contiki-ng/arch/platform/nrf52840/config/sdk_config.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/drivers/nrfx_common.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/nrf.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/nrf52840.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/../arm/CMSIS/CMSIS/Core/Include/core_cm4.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/../arm/CMSIS/CMSIS/Core/Include/cmsis_version.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/../arm/CMSIS/CMSIS/Core/Include/cmsis_compiler.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/../arm/CMSIS/CMSIS/Core/Include/cmsis_gcc.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/../arm/CMSIS/CMSIS/Core/Include/mpu_armv7.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/system_nrf52840.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/system_nrf.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/nrf52840_bitfields.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/nrf51_to_nrf52840.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/nrf52_to_nrf52840.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/compiler_abstraction.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/nrf_peripherals.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/nrf52840_peripherals.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/integration/nrfx/nrfx_glue.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/integration/nrfx/legacy/apply_old_config.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/soc/nrfx_irqs.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/soc/nrfx_irqs_nrf52840.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/nrf_assert.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/app_util.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/compiler_abstraction.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/nordic_common.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/nordic_common.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/app_util_platform.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/nrf_assert.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/app_error.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/sdk_errors.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/components/drivers_nrf/nrf_soc_nosd/nrf_error.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/app_error_weak.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/soc/nrfx_coredep.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/soc/nrfx_atomic.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/sdk_errors.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/sdk_resources.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/drivers/nrfx_errors.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/components/boards/pca10059.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/./nrf52840-def.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/../arm/cortex-m/cm4/cm4-def.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/../arm/./arm-def.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/./nrf52840-conf.h \
+ /home/riccardo/contiki-ng/os/contiki-default-conf.h \
+ /home/riccardo/contiki-ng/os/sys/process.h \
+ /home/riccardo/contiki-ng/os/sys/pt.h \
+ /home/riccardo/contiki-ng/os/sys/lc.h \
+ /home/riccardo/contiki-ng/os/sys/lc-switch.h \
+ /home/riccardo/contiki-ng/os/sys/cc.h \
+ /home/riccardo/contiki-ng/os/sys/autostart.h \
+ /home/riccardo/contiki-ng/os/sys/process.h \
+ /home/riccardo/contiki-ng/os/sys/timer.h \
+ /home/riccardo/contiki-ng/os/sys/clock.h \
+ /home/riccardo/contiki-ng/os/sys/ctimer.h \
+ /home/riccardo/contiki-ng/os/sys/etimer.h \
+ /home/riccardo/contiki-ng/os/sys/etimer.h \
+ /home/riccardo/contiki-ng/os/sys/rtimer.h \
+ /home/riccardo/contiki-ng/os/dev/watchdog.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/./rtimer-arch.h \
+ /home/riccardo/contiki-ng/os/sys/pt.h \
+ /home/riccardo/contiki-ng/os/sys/clock.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/uipbuf.h \
+ /home/riccardo/contiki-ng/os/net/linkaddr.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/tcpip.h \
+ /home/riccardo/contiki-ng/os/net/routing/rpl-lite/rpl-const.h \
+ /home/riccardo/contiki-ng/os/net/routing/rpl-lite/rpl-conf.h \
+ /home/riccardo/contiki-ng/os/net/routing/rpl-lite/rpl-types.h \
+ /home/riccardo/contiki-ng/os/net/routing/rpl-lite/rpl-icmp6.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/uip.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/uip-ds6.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/multicast/uip-mcast6.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/multicast/uip-mcast6-engines.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/multicast/uip-mcast6-route.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/multicast/smrf.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/multicast/esmrf.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/multicast/roll-tm.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/multicast/uip-mcast6-stats.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/multicast/mpl.h \
+ /home/riccardo/contiki-ng/os/sys/stimer.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/uip-nd6.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/uip-ds6-nbr.h \
+ /home/riccardo/contiki-ng/os/net/nbr-table.h \
+ /home/riccardo/contiki-ng/os/net/netstack.h \
+ /home/riccardo/contiki-ng/os/net/mac/mac.h \
+ /home/riccardo/contiki-ng/os/dev/radio.h \
+ /home/riccardo/contiki-ng/os/net/mac/framer/framer.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/uip-ds6-route.h \
+ /home/riccardo/contiki-ng/os/lib/list.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/uip-ds6-nbr.h \
+ /home/riccardo/contiki-ng/os/net/routing/rpl-lite/rpl-dag.h \
+ /home/riccardo/contiki-ng/os/net/routing/rpl-lite/rpl-dag-root.h \
+ /home/riccardo/contiki-ng/os/net/routing/rpl-lite/rpl-neighbor.h \
+ /home/riccardo/contiki-ng/os/net/ipv6/uip-ds6.h \
+ /home/riccardo/contiki-ng/os/sys/ctimer.h \
+ /home/riccardo/contiki-ng/os/net/routing/rpl-lite/rpl-ext-header.h \
+ /home/riccardo/contiki-ng/os/net/routing/rpl-lite/rpl-timers.h \
+ /home/riccardo/contiki-ng/os/net/link-stats.h \
+ /home/riccardo/contiki-ng/os/sys/log.h \
+ /home/riccardo/contiki-ng/os/sys/log-conf.h
 
-../../os/services/rpl-border-router/module-macros.h:
+/home/riccardo/contiki-ng/os/services/rpl-border-router/module-macros.h:
 
-../../os/net/routing/rpl-lite/rpl.h:
+/home/riccardo/contiki-ng/os/net/routing/rpl-lite/rpl.h:
 
-../../os/net/ipv6/uip.h:
+/home/riccardo/contiki-ng/os/net/ipv6/uip.h:
 
-../../os/net/ipv6/uipopt.h:
+/home/riccardo/contiki-ng/os/net/ipv6/uipopt.h:
 
-../../os/contiki.h:
+/home/riccardo/contiki-ng/os/contiki.h:
 
-../../arch/platform/nrf52840/./contiki-conf.h:
+/home/riccardo/contiki-ng/arch/platform/nrf52840/./contiki-conf.h:
 
 project-conf.h:
 
-../../arch/platform/nrf52840/dongle/nrf52840-board-def.h:
+/home/riccardo/contiki-ng/arch/platform/nrf52840/dongle/nrf52840-board-def.h:
 
-../../arch/cpu/nrf52840/lib/nrf52-sdk/components/boards/boards.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/components/boards/boards.h:
 
-../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/hal/nrf_gpio.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/hal/nrf_gpio.h:
 
-../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/nrfx.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/nrfx.h:
 
-../../arch/cpu/nrf52840/lib/nrf52-sdk/integration/nrfx/nrfx_config.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/integration/nrfx/nrfx_config.h:
 
-../../arch/platform/nrf52840/config/sdk_config.h:
+/home/riccardo/contiki-ng/arch/platform/nrf52840/config/sdk_config.h:
 
-../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/drivers/nrfx_common.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/drivers/nrfx_common.h:
 
-../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/nrf.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/nrf.h:
 
-../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/nrf52840.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/nrf52840.h:
 
-../../arch/cpu/nrf52840/../arm/CMSIS/CMSIS/Core/Include/core_cm4.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/../arm/CMSIS/CMSIS/Core/Include/core_cm4.h:
 
-../../arch/cpu/nrf52840/../arm/CMSIS/CMSIS/Core/Include/cmsis_version.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/../arm/CMSIS/CMSIS/Core/Include/cmsis_version.h:
 
-../../arch/cpu/nrf52840/../arm/CMSIS/CMSIS/Core/Include/cmsis_compiler.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/../arm/CMSIS/CMSIS/Core/Include/cmsis_compiler.h:
 
-../../arch/cpu/nrf52840/../arm/CMSIS/CMSIS/Core/Include/cmsis_gcc.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/../arm/CMSIS/CMSIS/Core/Include/cmsis_gcc.h:
 
-../../arch/cpu/nrf52840/../arm/CMSIS/CMSIS/Core/Include/mpu_armv7.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/../arm/CMSIS/CMSIS/Core/Include/mpu_armv7.h:
 
-../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/system_nrf52840.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/system_nrf52840.h:
 
-../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/system_nrf.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/system_nrf.h:
 
-../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/nrf52840_bitfields.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/nrf52840_bitfields.h:
 
-../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/nrf51_to_nrf52840.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/nrf51_to_nrf52840.h:
 
-../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/nrf52_to_nrf52840.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/nrf52_to_nrf52840.h:
 
-../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/compiler_abstraction.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/compiler_abstraction.h:
 
-../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/nrf_peripherals.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/nrf_peripherals.h:
 
-../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/nrf52840_peripherals.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/nrf52840_peripherals.h:
 
-../../arch/cpu/nrf52840/lib/nrf52-sdk/integration/nrfx/nrfx_glue.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/integration/nrfx/nrfx_glue.h:
 
-../../arch/cpu/nrf52840/lib/nrf52-sdk/integration/nrfx/legacy/apply_old_config.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/integration/nrfx/legacy/apply_old_config.h:
 
-../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/soc/nrfx_irqs.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/soc/nrfx_irqs.h:
 
-../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/soc/nrfx_irqs_nrf52840.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/soc/nrfx_irqs_nrf52840.h:
 
-../../arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/nrf_assert.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/nrf_assert.h:
 
-../../arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/app_util.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/app_util.h:
 
-../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/compiler_abstraction.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/mdk/compiler_abstraction.h:
 
-../../arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/nordic_common.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/nordic_common.h:
 
-../../arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/nordic_common.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/nordic_common.h:
 
-../../arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/app_util_platform.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/app_util_platform.h:
 
-../../arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/nrf_assert.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/nrf_assert.h:
 
-../../arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/app_error.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/app_error.h:
 
-../../arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/sdk_errors.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/sdk_errors.h:
 
-../../arch/cpu/nrf52840/lib/nrf52-sdk/components/drivers_nrf/nrf_soc_nosd/nrf_error.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/components/drivers_nrf/nrf_soc_nosd/nrf_error.h:
 
-../../arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/app_error_weak.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/app_error_weak.h:
 
-../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/soc/nrfx_coredep.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/soc/nrfx_coredep.h:
 
-../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/soc/nrfx_atomic.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/soc/nrfx_atomic.h:
 
-../../arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/sdk_errors.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/sdk_errors.h:
 
-../../arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/sdk_resources.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/components/libraries/util/sdk_resources.h:
 
-../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/drivers/nrfx_errors.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/drivers/nrfx_errors.h:
 
-../../arch/cpu/nrf52840/lib/nrf52-sdk/components/boards/pca10059.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/components/boards/pca10059.h:
 
-../../arch/cpu/nrf52840/./nrf52840-def.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/./nrf52840-def.h:
 
-../../arch/cpu/nrf52840/../arm/cortex-m/cm4/cm4-def.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/../arm/cortex-m/cm4/cm4-def.h:
 
-../../arch/cpu/nrf52840/../arm/./arm-def.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/../arm/./arm-def.h:
 
-../../arch/cpu/nrf52840/./nrf52840-conf.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/./nrf52840-conf.h:
 
-../../os/contiki-default-conf.h:
+/home/riccardo/contiki-ng/os/contiki-default-conf.h:
 
-../../os/sys/process.h:
+/home/riccardo/contiki-ng/os/sys/process.h:
 
-../../os/sys/pt.h:
+/home/riccardo/contiki-ng/os/sys/pt.h:
 
-../../os/sys/lc.h:
+/home/riccardo/contiki-ng/os/sys/lc.h:
 
-../../os/sys/lc-switch.h:
+/home/riccardo/contiki-ng/os/sys/lc-switch.h:
 
-../../os/sys/cc.h:
+/home/riccardo/contiki-ng/os/sys/cc.h:
 
-../../os/sys/autostart.h:
+/home/riccardo/contiki-ng/os/sys/autostart.h:
 
-../../os/sys/process.h:
+/home/riccardo/contiki-ng/os/sys/process.h:
 
-../../os/sys/timer.h:
+/home/riccardo/contiki-ng/os/sys/timer.h:
 
-../../os/sys/clock.h:
+/home/riccardo/contiki-ng/os/sys/clock.h:
 
-../../os/sys/ctimer.h:
+/home/riccardo/contiki-ng/os/sys/ctimer.h:
 
-../../os/sys/etimer.h:
+/home/riccardo/contiki-ng/os/sys/etimer.h:
 
-../../os/sys/etimer.h:
+/home/riccardo/contiki-ng/os/sys/etimer.h:
 
-../../os/sys/rtimer.h:
+/home/riccardo/contiki-ng/os/sys/rtimer.h:
 
-../../os/dev/watchdog.h:
+/home/riccardo/contiki-ng/os/dev/watchdog.h:
 
-../../arch/cpu/nrf52840/./rtimer-arch.h:
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/./rtimer-arch.h:
 
-../../os/sys/pt.h:
+/home/riccardo/contiki-ng/os/sys/pt.h:
 
-../../os/sys/clock.h:
+/home/riccardo/contiki-ng/os/sys/clock.h:
 
-../../os/net/ipv6/uipbuf.h:
+/home/riccardo/contiki-ng/os/net/ipv6/uipbuf.h:
 
-../../os/net/linkaddr.h:
+/home/riccardo/contiki-ng/os/net/linkaddr.h:
 
-../../os/net/ipv6/tcpip.h:
+/home/riccardo/contiki-ng/os/net/ipv6/tcpip.h:
 
-../../os/net/routing/rpl-lite/rpl-const.h:
+/home/riccardo/contiki-ng/os/net/routing/rpl-lite/rpl-const.h:
 
-../../os/net/routing/rpl-lite/rpl-conf.h:
+/home/riccardo/contiki-ng/os/net/routing/rpl-lite/rpl-conf.h:
 
-../../os/net/routing/rpl-lite/rpl-types.h:
+/home/riccardo/contiki-ng/os/net/routing/rpl-lite/rpl-types.h:
 
-../../os/net/routing/rpl-lite/rpl-icmp6.h:
+/home/riccardo/contiki-ng/os/net/routing/rpl-lite/rpl-icmp6.h:
 
-../../os/net/ipv6/uip.h:
+/home/riccardo/contiki-ng/os/net/ipv6/uip.h:
 
-../../os/net/ipv6/uip-ds6.h:
+/home/riccardo/contiki-ng/os/net/ipv6/uip-ds6.h:
 
-../../os/net/ipv6/multicast/uip-mcast6.h:
+/home/riccardo/contiki-ng/os/net/ipv6/multicast/uip-mcast6.h:
 
-../../os/net/ipv6/multicast/uip-mcast6-engines.h:
+/home/riccardo/contiki-ng/os/net/ipv6/multicast/uip-mcast6-engines.h:
 
-../../os/net/ipv6/multicast/uip-mcast6-route.h:
+/home/riccardo/contiki-ng/os/net/ipv6/multicast/uip-mcast6-route.h:
 
-../../os/net/ipv6/multicast/smrf.h:
+/home/riccardo/contiki-ng/os/net/ipv6/multicast/smrf.h:
 
-../../os/net/ipv6/multicast/esmrf.h:
+/home/riccardo/contiki-ng/os/net/ipv6/multicast/esmrf.h:
 
-../../os/net/ipv6/multicast/roll-tm.h:
+/home/riccardo/contiki-ng/os/net/ipv6/multicast/roll-tm.h:
 
-../../os/net/ipv6/multicast/uip-mcast6-stats.h:
+/home/riccardo/contiki-ng/os/net/ipv6/multicast/uip-mcast6-stats.h:
 
-../../os/net/ipv6/multicast/mpl.h:
+/home/riccardo/contiki-ng/os/net/ipv6/multicast/mpl.h:
 
-../../os/sys/stimer.h:
+/home/riccardo/contiki-ng/os/sys/stimer.h:
 
-../../os/net/ipv6/uip-nd6.h:
+/home/riccardo/contiki-ng/os/net/ipv6/uip-nd6.h:
 
-../../os/net/ipv6/uip-ds6-nbr.h:
+/home/riccardo/contiki-ng/os/net/ipv6/uip-ds6-nbr.h:
 
-../../os/net/nbr-table.h:
+/home/riccardo/contiki-ng/os/net/nbr-table.h:
 
-../../os/net/netstack.h:
+/home/riccardo/contiki-ng/os/net/netstack.h:
 
-../../os/net/mac/mac.h:
+/home/riccardo/contiki-ng/os/net/mac/mac.h:
 
-../../os/dev/radio.h:
+/home/riccardo/contiki-ng/os/dev/radio.h:
 
-../../os/net/mac/framer/framer.h:
+/home/riccardo/contiki-ng/os/net/mac/framer/framer.h:
 
-../../os/net/ipv6/uip-ds6-route.h:
+/home/riccardo/contiki-ng/os/net/ipv6/uip-ds6-route.h:
 
-../../os/lib/list.h:
+/home/riccardo/contiki-ng/os/lib/list.h:
 
-../../os/net/ipv6/uip-ds6-nbr.h:
+/home/riccardo/contiki-ng/os/net/ipv6/uip-ds6-nbr.h:
 
-../../os/net/routing/rpl-lite/rpl-dag.h:
+/home/riccardo/contiki-ng/os/net/routing/rpl-lite/rpl-dag.h:
 
-../../os/net/routing/rpl-lite/rpl-dag-root.h:
+/home/riccardo/contiki-ng/os/net/routing/rpl-lite/rpl-dag-root.h:
 
-../../os/net/routing/rpl-lite/rpl-neighbor.h:
+/home/riccardo/contiki-ng/os/net/routing/rpl-lite/rpl-neighbor.h:
 
-../../os/net/ipv6/uip-ds6.h:
+/home/riccardo/contiki-ng/os/net/ipv6/uip-ds6.h:
 
-../../os/sys/ctimer.h:
+/home/riccardo/contiki-ng/os/sys/ctimer.h:
 
-../../os/net/routing/rpl-lite/rpl-ext-header.h:
+/home/riccardo/contiki-ng/os/net/routing/rpl-lite/rpl-ext-header.h:
 
-../../os/net/routing/rpl-lite/rpl-timers.h:
+/home/riccardo/contiki-ng/os/net/routing/rpl-lite/rpl-timers.h:
 
-../../os/net/link-stats.h:
+/home/riccardo/contiki-ng/os/net/link-stats.h:
 
-../../os/sys/log.h:
+/home/riccardo/contiki-ng/os/sys/log.h:
 
-../../os/sys/log-conf.h:
+/home/riccardo/contiki-ng/os/sys/log-conf.h:

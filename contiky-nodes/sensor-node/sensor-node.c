@@ -1,5 +1,6 @@
 #include "contiki.h"
 #include "cbor.h"
+#include "dev/leds.h"
 #include "coap-engine.h"
 #include "sys/etimer.h"
 #include "os/sys/log.h"
@@ -103,6 +104,7 @@ PROCESS_THREAD(sensor_node,ev,data){
         PROCESS_BEGIN();
         coap_activate_resource(&vital_signs_resource, "vital_signs");
         etimer_set(&et, interval);
+	leds_on(LEDS_GREEN);
         while(1){
             PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
             vital_signs_resource.trigger();

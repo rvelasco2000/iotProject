@@ -1,4 +1,5 @@
-build/nrf52840/dongle/obj/crc16.o: ../../os/lib/crc16.c \
- ../../os/services/rpl-border-router/module-macros.h
+build/nrf52840/dongle/obj/crc16.o: \
+ /home/riccardo/contiki-ng/os/lib/crc16.c \
+ /home/riccardo/contiki-ng/os/services/rpl-border-router/module-macros.h
 
-../../os/services/rpl-border-router/module-macros.h:
+/home/riccardo/contiki-ng/os/services/rpl-border-router/module-macros.h:
