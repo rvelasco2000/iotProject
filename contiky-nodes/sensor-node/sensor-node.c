@@ -1,11 +1,13 @@
 #include "contiki.h"
 #include "cbor.h"
 #include "dev/leds.h"
+#include "dev/button-hal.h"
 #include "coap-engine.h"
 #include "sys/etimer.h"
 #include "os/sys/log.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #define LOG_MODULE "Sensor Node"
 #define LOG_LEVEL LOG_LEVEL_INFO
 #define SENSOR_NAME "snode_0"
@@ -20,6 +22,7 @@ static clock_time_t interval=CLOCK_SECOND*30;
 static int spo2=95;
 static int respiration_rate=20;
 static int heart_rate=70;
+static bool panic_mode=false;
 extern coap_resource_t vital_signs_resource;
 
 static void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset){
@@ -84,6 +87,23 @@ static void res_get_handler(coap_message_t *request, coap_message_t *response, u
     LOG_INFO("i have send:spo2: %d, Respiration Rate: %d, Heart Rate: %d\n sended in %zu byte", spo2, respiration_rate, heart_rate,len);
 
 } 
+static void button_press_handler(void){
+    if(panic_mode){
+        panic_mode=false;
+        leds_off(LEDS_ALL);
+        leds_on(LEDS_GREEN);
+        interval=CLOCK_SECOND*30;
+        LOG_INFO("Panic mode deactivated\n");
+    }
+    else if(!panic_mode){
+        panic_mode=true;
+        leds_off(LEDS_ALL);
+        leds_on(LEDS_RED);
+        interval=CLOCK_SECOND*5;
+        LOG_INFO("Panic mode activated\n");
+    }
+
+}
 
 static void res_event_handler(void){
     spo2 = 85 + (rand() % 14);       
@@ -104,13 +124,25 @@ PROCESS_THREAD(sensor_node,ev,data){
         PROCESS_BEGIN();
         coap_activate_resource(&vital_signs_resource, "vital_signs");
         etimer_set(&et, interval);
-	leds_on(LEDS_GREEN);
+	    leds_on(LEDS_GREEN);
+
         while(1){
-            PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
-            vital_signs_resource.trigger();
-            etimer_reset(&et);
-            //res_event_handler();
-            LOG_INFO("Sensor Node is running\n");
+            PROCESS_YIELD();
+            if(ev==PROCESS_EVENT_TIMER&&data==&et){
+                vital_signs_resource.trigger();
+                etimer_set(&et, interval);
+                LOG_INFO("Sensor Node is running\n");
+            }
+            else if(ev==button_hal_periodic_event){
+                button_hal_button_t *btn = (button_hal_button_t *)data;
+                if(btn->press_duration_seconds==5){
+                    button_press_handler();
+                    vital_signs_resource.trigger();
+                    etimer_set(&et, interval);
+                }
+            }
+            
         }
     PROCESS_END();
 }
+
