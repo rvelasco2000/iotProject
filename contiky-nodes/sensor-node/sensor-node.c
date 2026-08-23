@@ -132,12 +132,16 @@ static bool run_inference(int hr, int rr, int spo2){
     features[2]=(clamped_spo2-FEATURE_MEAN[2])/FEATURE_SCALE[2];
     float outputs[1]={0};
     eml_net_predict_proba(&vital_signs_panic, features,3,outputs,1);
-    LOG_INFO("Model output: %f\n", outputs[0]);
+    int printable_output=(int)(outputs[0] * 1000.0f);
+    LOG_INFO("Model output: %d.%03d\n", printable_output/1000,printable_output%1000);
     return outputs[0]>=PANIC_THRESHOLD;
 }
 static void exit_panic_mode(void){
     panic_mode=false;
     leds_off(LEDS_ALL);
+    if(edge_ai_test_mode){
+        leds_single_on(LEDS_YELLOW);
+    }
     leds_on(LEDS_GREEN);
     interval=CLOCK_SECOND*30;
     LOG_INFO("Panic mode deactivated\n");
@@ -145,6 +149,9 @@ static void exit_panic_mode(void){
 static void enter_panic_mode(void){
     panic_mode=true;
     leds_off(LEDS_ALL);
+    if(edge_ai_test_mode){
+        leds_single_on(LEDS_YELLOW);
+    }
     leds_on(LEDS_RED);
     interval=CLOCK_SECOND*5;
     LOG_INFO("Panic mode activated\n");
