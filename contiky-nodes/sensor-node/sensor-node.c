@@ -22,18 +22,21 @@
 #define MIN_RR 8.0f
 #define MAX_SPO2 100.0f
 #define MIN_SPO2 85.0f
+#define DOUBLE_PRESS_INTERVAL (CLOCK_SECOND/2)
 PROCESS(sensor_node, "Sensor Node");
 AUTOSTART_PROCESSES(&sensor_node);
 
-
+// Global variables
 static clock_time_t interval=CLOCK_SECOND*30;
 static int spo2=95;
 static int respiration_rate=20;
 static int heart_rate=70;
 static bool panic_mode=false;
+static bool edge_ai_test_mode=false;
 extern coap_resource_t vital_signs_resource;
 static const float FEATURE_MEAN[3]  = { 76.1322f, 16.3496f, 96.5798f };
 static const float FEATURE_SCALE[3] = { 5.4739f, 2.1311f, 1.3924f };
+static clock_time_t last_release_time=0;
 
 static void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset){
     cbor_writer_state_t state;
@@ -129,11 +132,16 @@ static bool run_inference(int hr, int rr, int spo2){
     features[2]=(clamped_spo2-FEATURE_MEAN[2])/FEATURE_SCALE[2];
     float outputs[1]={0};
     eml_net_predict_proba(&vital_signs_panic, features,3,outputs,1);
+    int printable_output=(int)(outputs[0] * 1000.0f);
+    LOG_INFO("Model output: %d.%03d\n", printable_output/1000,printable_output%1000);
     return outputs[0]>=PANIC_THRESHOLD;
 }
 static void exit_panic_mode(void){
     panic_mode=false;
     leds_off(LEDS_ALL);
+    if(edge_ai_test_mode){
+        leds_single_on(LEDS_YELLOW);
+    }
     leds_on(LEDS_GREEN);
     interval=CLOCK_SECOND*30;
     LOG_INFO("Panic mode deactivated\n");
@@ -141,6 +149,9 @@ static void exit_panic_mode(void){
 static void enter_panic_mode(void){
     panic_mode=true;
     leds_off(LEDS_ALL);
+    if(edge_ai_test_mode){
+        leds_single_on(LEDS_YELLOW);
+    }
     leds_on(LEDS_RED);
     interval=CLOCK_SECOND*5;
     LOG_INFO("Panic mode activated\n");
@@ -154,11 +165,36 @@ static void button_press_handler(void){
     }
 
 }
+static void enter_test_mode(void){
+    edge_ai_test_mode=true;
+    leds_single_on(LEDS_YELLOW);
+    LOG_INFO("Edge AI test mode activated\n");
 
+}
+static void exit_test_mode(void){
+    edge_ai_test_mode=false;
+    leds_single_off(LEDS_YELLOW);
+    LOG_INFO("Edge AI test mode deactivated\n");
+}
+static void double_button_press_handler(void){
+    if(edge_ai_test_mode){
+        exit_test_mode();
+    }
+    else if(!edge_ai_test_mode){
+        enter_test_mode();
+    }
+}
 static void res_event_handler(void){
-    spo2 = 85 + (rand() % 14);       
-    respiration_rate = 12 + (rand() % 20);
-    heart_rate = 60 + (rand() % 90);
+    if(edge_ai_test_mode){
+        spo2 = 80 + (rand() % 16);              
+        respiration_rate = 15 + (rand() % 20);  
+        heart_rate = 75 + (rand() % 80); 
+    }
+    else{
+        spo2 = 85 + (rand() % 14);       
+        respiration_rate = 12 + (rand() % 20);
+        heart_rate = 60 + (rand() % 90);
+    }
     if (run_inference(heart_rate,respiration_rate,spo2) && !panic_mode){
         enter_panic_mode();
     }
@@ -196,9 +232,24 @@ PROCESS_THREAD(sensor_node,ev,data){
                     etimer_set(&et, interval);
                 }
             }
+            else if(ev==button_hal_release_event){
+                button_hal_button_t *btn=(button_hal_button_t *)data;
+                if(btn->press_duration_seconds<1){
+                    clock_time_t now=clock_time();
+                    if(now-last_release_time<=DOUBLE_PRESS_INTERVAL){
+                        double_button_press_handler();
+                        last_release_time=0;
+                    }
+                    else{
+                    last_release_time=now;
+                }
+                }
+                
+            }
             
         }
     PROCESS_END();
 }
+
 
 
