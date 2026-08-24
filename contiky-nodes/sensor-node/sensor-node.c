@@ -34,8 +34,8 @@ static int heart_rate=70;
 static bool panic_mode=false;
 static bool edge_ai_test_mode=false;
 extern coap_resource_t vital_signs_resource;
-static const float FEATURE_MEAN[3]  = { 76.1322f, 16.3496f, 96.5798f };
-static const float FEATURE_SCALE[3] = { 5.4739f, 2.1311f, 1.3924f };
+static const float FEATURE_MEAN[3]  = {76.1263f, 16.3470f, 96.5792f};  /* heart_rate  respiratory_rate  oxygen_saturation */
+static const float FEATURE_SCALE[3] = {5.4737f, 2.1339f, 1.3945f};
 static clock_time_t last_release_time=0;
 
 static void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset){
@@ -130,11 +130,10 @@ static bool run_inference(int hr, int rr, int spo2){
     features[0]=(clamped_hr-FEATURE_MEAN[0])/FEATURE_SCALE[0];
     features[1]=(clamped_rr-FEATURE_MEAN[1])/FEATURE_SCALE[1];
     features[2]=(clamped_spo2-FEATURE_MEAN[2])/FEATURE_SCALE[2];
-    float outputs[1]={0};
-    eml_net_predict_proba(&vital_signs_panic, features,3,outputs,1);
-    int printable_output=(int)(outputs[0] * 1000.0f);
-    LOG_INFO("Model output: %d.%03d\n", printable_output/1000,printable_output%1000);
-    return outputs[0]>=PANIC_THRESHOLD;
+    float proba=vital_signs_panic_regress1(features,3);
+    int printable_output=(int)(proba * 1000.0f);
+    LOG_INFO("Model output: %d.%03d\n", printable_output/1000, printable_output%1000);
+    return proba>=PANIC_THRESHOLD;
 }
 static void exit_panic_mode(void){
     panic_mode=false;
