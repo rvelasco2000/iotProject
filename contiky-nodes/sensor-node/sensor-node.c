@@ -6,6 +6,7 @@
 #include "sys/etimer.h"
 #include "os/sys/log.h"
 #include "model/vital_signs_panic.h"
+#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -28,11 +29,20 @@ AUTOSTART_PROCESSES(&sensor_node);
 
 // Global variables
 static clock_time_t interval=CLOCK_SECOND*30;
+static struct etimer blink_et;
 static int spo2=95;
 static int respiration_rate=20;
 static int heart_rate=70;
 static bool panic_mode=false;
-static bool edge_ai_test_mode=false;
+//static bool edge_ai_test_mode=false;
+typedef enum{
+    PATIENT_STABLE,
+    PATIENT_CRITICAL,
+    PATIENT_DANGER,
+}patient_test_status_t;
+
+static patient_test_status_t test_status=PATIENT_STABLE;
+
 extern coap_resource_t vital_signs_resource;
 static const float FEATURE_MEAN[3]  = {76.1263f, 16.3470f, 96.5792f};  /* heart_rate  respiratory_rate  oxygen_saturation */
 static const float FEATURE_SCALE[3] = {5.4737f, 2.1339f, 1.3945f};
@@ -138,7 +148,7 @@ static bool run_inference(int hr, int rr, int spo2){
 static void exit_panic_mode(void){
     panic_mode=false;
     leds_off(LEDS_ALL);
-    if(edge_ai_test_mode){
+    if(test_status==PATIENT_CRITICAL){
         leds_single_on(LEDS_YELLOW);
     }
     leds_on(LEDS_GREEN);
@@ -148,7 +158,7 @@ static void exit_panic_mode(void){
 static void enter_panic_mode(void){
     panic_mode=true;
     leds_off(LEDS_ALL);
-    if(edge_ai_test_mode){
+    if(test_status==PATIENT_CRITICAL){
         leds_single_on(LEDS_YELLOW);
     }
     leds_on(LEDS_RED);
@@ -164,35 +174,48 @@ static void button_press_handler(void){
     }
 
 }
-static void enter_test_mode(void){
-    edge_ai_test_mode=true;
-    leds_single_on(LEDS_YELLOW);
-    LOG_INFO("Edge AI test mode activated\n");
-
-}
-static void exit_test_mode(void){
-    edge_ai_test_mode=false;
-    leds_single_off(LEDS_YELLOW);
-    LOG_INFO("Edge AI test mode deactivated\n");
-}
 static void double_button_press_handler(void){
-    if(edge_ai_test_mode){
-        exit_test_mode();
-    }
-    else if(!edge_ai_test_mode){
-        enter_test_mode();
+    switch(test_status){
+        case PATIENT_STABLE:
+            test_status=PATIENT_CRITICAL;
+            leds_single_on(LEDS_YELLOW);
+            LOG_INFO("switching to critical status for patient\n");
+            break;
+        case PATIENT_CRITICAL:
+            test_status=PATIENT_DANGER;
+            LOG_INFO("switching to danger status for patient\n");
+            process_post(&sensor_node,PROCESS_EVENT_TIMER,&blink_et);
+            etimer_set(&blink_et,CLOCK_SECOND/2);
+            break;
+        case PATIENT_DANGER:
+            test_status=PATIENT_STABLE;
+            leds_single_off(LEDS_YELLOW);
+            LOG_INFO("switching to stable status for patient\n");
+            break;
+        default:
+            LOG_INFO("status not recognised");    
     }
 }
 static void res_event_handler(void){
-    if(edge_ai_test_mode){
-        spo2 = 80 + (rand() % 16);              
-        respiration_rate = 15 + (rand() % 20);  
-        heart_rate = 75 + (rand() % 80); 
-    }
-    else{
-        spo2 = 85 + (rand() % 14);       
-        respiration_rate = 12 + (rand() % 20);
-        heart_rate = 60 + (rand() % 90);
+    switch(test_status){
+        case PATIENT_DANGER:
+            spo2 = 75 + (rand() % 10);             
+            respiration_rate = 32 + (rand() % 8);  
+            heart_rate = 135 + (rand() % 20);
+            break;
+        case PATIENT_CRITICAL:
+            spo2 = 80 + (rand() % 16);               
+            respiration_rate = 15 + (rand() % 20);  
+            heart_rate = 75 + (rand() % 80);
+            break;
+        case PATIENT_STABLE:
+            spo2 = 94 + (rand() % 6);              
+            respiration_rate = 12 + (rand() % 9);  
+            heart_rate = 60 + (rand() % 31);
+            break;
+        default:
+            LOG_INFO("unknown status\n");
+
     }
     if (run_inference(heart_rate,respiration_rate,spo2) && !panic_mode){
         enter_panic_mode();
@@ -218,10 +241,19 @@ PROCESS_THREAD(sensor_node,ev,data){
 
         while(1){
             PROCESS_YIELD();
-            if(ev==PROCESS_EVENT_TIMER&&data==&et){
-                vital_signs_resource.trigger();
-                etimer_set(&et, interval);
-                LOG_INFO("Sensor Node is running\n");
+            if(ev==PROCESS_EVENT_TIMER){
+                if(data==&et){
+                    vital_signs_resource.trigger();
+                    etimer_set(&et, interval);
+                    LOG_INFO("Sensor Node is running\n");
+                }
+                else if(data==&blink_et){
+                    if(test_status==PATIENT_DANGER){
+                        leds_single_toggle(LEDS_YELLOW);
+                        etimer_reset(&blink_et);
+                    }
+                }
+                
             }
             else if(ev==button_hal_periodic_event){
                 button_hal_button_t *btn = (button_hal_button_t *)data;
@@ -249,6 +281,7 @@ PROCESS_THREAD(sensor_node,ev,data){
         }
     PROCESS_END();
 }
+
 
 
 
