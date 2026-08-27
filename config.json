@@ -3,13 +3,19 @@
     "influxdb": {
         "url": "http://localhost:8086",
         "org": "unipi_iot",
-        "bucket": "vital_signs"
+        "bucket": "vital_signs",
+        "decision_bucket": "panic_decision"
     },
-    "sensor_nodes":[
-        {
-            "id":0,
-            "patient_name":"Mario Rossi",
+    "patients":[{
+        "patient_name":"Mario Rossi",
+        "sensor_nodes":[{
+            "sensor_id":0,
             "ipv6":"fd00::f6ce:367b:6409:f155"
-        }
-    ]
+        }],
+        "actuator_nodes":[{
+            "actuator_id":0,
+            "ipv6":"fd00::f6ce:36d0:9a1d:28c"
+        }]
+    }]
 }
+

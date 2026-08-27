@@ -23,10 +23,9 @@ extern coap_resource_t alarm_resource;
 
 static void res_alarm_get_handler(coap_message_t *request, coap_message_t *response,uint8_t *buffer, uint16_t preferred_size, int32_t *offset){
     char msg[32];
-    int len=snprintf(msg,sizeof(msg),"{\"alarm\": \"%s\"}",alarm_active ? "ON":"OFF");
+    int len = snprintf((char *)buffer, preferred_size,"{\"alarm\": \"%s\"}",alarm_active?"ON":"OFF");
     coap_set_header_content_format(response, TEXT_PLAIN);
     coap_set_payload(response, buffer, len);
-
 }
 static void res_alarm_put_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset) {
     const uint8_t *payload = NULL;
@@ -59,7 +58,7 @@ static void res_alarm_put_handler(coap_message_t *request, coap_message_t *respo
 }
 static void res_pump_get_handler(coap_message_t *request, coap_message_t *response,uint8_t *buffer, uint16_t preferred_size, int32_t *offset){
     char msg[32];
-    int len=snprintf(msg,sizeof(msg),"{\"pump\": \"%s\"}",pump_active ? "ON":"OFF");
+    int len = snprintf((char *)buffer, preferred_size,"{\"pump\": \"%s\"}",pump_active?"ON":"OFF");
     coap_set_header_content_format(response, TEXT_PLAIN);
     coap_set_payload(response, buffer,len);
 }
@@ -135,4 +134,5 @@ PROCESS_THREAD(actuator_node,ev,data){
     }
     PROCESS_END();
 }
+
 
