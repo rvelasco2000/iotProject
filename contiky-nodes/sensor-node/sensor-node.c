@@ -165,6 +165,26 @@ static void enter_panic_mode(void){
     interval=CLOCK_SECOND*5;
     LOG_INFO("Panic mode activated\n");
 }
+static void res_put_handler(coap_message_t *request, coap_message_t *response,uint8_t *buffer, uint16_t preferred_size, int32_t *offset){
+  const uint8_t *payload=NULL;
+  int len=coap_get_payload(request, &payload);
+  if(len>0){
+    if(strncmp((const char*)payload,"0",1)==0){
+        if(panic_mode){
+            exit_panic_mode();
+        }
+    }
+    else if(strncmp((const char*)payload,"1",1)==0){
+        if(!panic_mode){
+            enter_panic_mode();
+        }
+    }
+    coap_set_status_code(response,CHANGED_2_04);
+  }
+  else{
+    coap_set_status_code(response,BAD_REQUEST_4_00);
+  }  
+}
 static void button_press_handler(void){
     if(panic_mode){
         exit_panic_mode();
@@ -227,7 +247,7 @@ EVENT_RESOURCE(vital_signs_resource,
                "title=\"vital signs\";obs",
                res_get_handler,
                NULL,
-               NULL,
+               res_put_handler,
                NULL,
                res_event_handler);
 PROCESS_THREAD(sensor_node,ev,data){
@@ -281,6 +301,7 @@ PROCESS_THREAD(sensor_node,ev,data){
         }
     PROCESS_END();
 }
+
 
 
 

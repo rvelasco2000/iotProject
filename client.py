@@ -56,19 +56,19 @@ class PatientState:
         
 patient_states: dict[str, PatientState] = {}
 
-async def send_actuator_command(protocol,patient_name,actuator_ipv6,resource,state_val):
-    if(not actuator_ipv6):
-        print("[ACTUATOR ERROR] no ipv6 configured for this actuator")
+async def send_coap_command(protocol,patient_name,remote_ipv6,resource,state_val):
+    if(not remote_ipv6):
+        print("[REMOTE ERROR] no ipv6 configured for this device")
         return False
-    uri=f"coap://[{actuator_ipv6}]/{resource}"
+    uri=f"coap://[{remote_ipv6}]/{resource}"
     payload=str(state_val).encode("utf-8")
     request=Message(code=PUT,uri=uri,payload=payload)
     try:
         response=await protocol.request(request).response
-        print(f"[ACTUATOR] Resource'{resource}'on[{actuator_ipv6}] assciated to [{patient_name}] set on {state_val} -> Coap response: {response.code}")
+        print(f"[REMOTE] Resource'{resource}'on[{remote_ipv6}] assciated to [{patient_name}] set on {state_val} -> Coap response: {response.code}")
         return response.code.is_successful()
     except Exception as e:
-        print(f"[ACTUATOR COMMUNICATION ERROR] cannot contact {uri}: {e}")
+        print(f"[REMOTE] cannot contact {uri}: {e}")
         return False
     
 async def write_decision_event(write_api, bucket, org, patient_name, decision, hr, rr, spo2):
@@ -85,7 +85,7 @@ async def write_decision_event(write_api, bucket, org, patient_name, decision, h
     except Exception as e:
         print(f"[INFLUXDB ERROR] Failed to write decision event for {patient_name}: {e}") 
 
-async def evaluate_and_act(protocol,state,sensor_id,hr,rr,spo2,write_api,bucket,org,actuator_ipv6=None):
+async def evaluate_and_act(protocol,state,sensor_id,hr,rr,spo2,write_api,bucket,org,actuator_ipv6=None,sensor_ipv6=None):
     state.add_reading(hr,rr,spo2)
     decision=state.evaluate_patient_condition()
     match decision:
@@ -93,19 +93,23 @@ async def evaluate_and_act(protocol,state,sensor_id,hr,rr,spo2,write_api,bucket,
             if(not state.pump_active):
                 state.pump_active=True
                 state.alarm_active=True
-                await send_actuator_command(protocol,state.patient_name,actuator_ipv6, "pump", "1")
-                await send_actuator_command(protocol,state.patient_name,actuator_ipv6, "alarm", "1")
+                await send_coap_command(protocol,state.patient_name,actuator_ipv6, "pump", "1")
+                await send_coap_command(protocol,state.patient_name,actuator_ipv6, "alarm", "1")
+                await send_coap_command(protocol,state.patient_name,sensor_ipv6, "vital_signs", "1")
         case "activate_alarm":
             if(not state.alarm_active):
                 state.alarm_active=True
-                await send_actuator_command(protocol,state.patient_name,actuator_ipv6, "alarm", "1")
+                await send_coap_command(protocol,state.patient_name,actuator_ipv6, "alarm", "1")
+                await send_coap_command(protocol,state.patient_name,sensor_ipv6, "vital_signs", "1")
+                
         case "stable":
             if(state.alarm_active):
-                await send_actuator_command(protocol,state.patient_name,actuator_ipv6, "alarm", "0")
+                await send_coap_command(protocol,state.patient_name,actuator_ipv6, "alarm", "0")
                 if(state.pump_active):
-                    await send_actuator_command(protocol,state.patient_name,actuator_ipv6, "pump", "0")
+                    await send_coap_command(protocol,state.patient_name,actuator_ipv6, "pump", "0")
                     state.pump_active=False
                 state.alarm_active=False
+                await send_coap_command(protocol,state.patient_name,sensor_ipv6, "vital_signs", "0")
         case "insufficient_data":
             print("data is not sufficient")        
         case _:
@@ -185,7 +189,7 @@ async def observe_sensor(protocol, app_name, sensor_id, patient_name, ipv6, writ
         vitals=extract_vitals(cbor_data)
         if(vitals is not None):
             hh,rr,spo2=vitals
-            decision = await evaluate_and_act(protocol, state, sensor_id, hh, rr, spo2,write_api, decision_bucket, influx_org,actuator_ipv6)
+            decision = await evaluate_and_act(protocol, state, sensor_id, hh, rr, spo2,write_api, decision_bucket, influx_org,actuator_ipv6,ipv6)
             print(f"[DECISION] {patient_name}: {decision}")
     try:
         first_response = await pr.response
@@ -260,5 +264,6 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
 
