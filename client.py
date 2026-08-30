@@ -27,6 +27,7 @@ class PatientState:
         self.patient_name = patient_name
         self.window=deque(maxlen=WINDOW_SIZE)
         self.prev_decision="insufficient_data"
+        self.n_stable=0;
 
     def add_reading(self,hr, rr,spo2):
         n_criteria=sum([hr>=HR_CRITICAL, rr>=RR_CRITICAL, spo2<=SPO2_CRITICAL])
@@ -42,21 +43,16 @@ class PatientState:
         if(len(self.window)>=2):
             last_two=list(self.window)[-2:]
             if all(reading["danger"] for reading in last_two):
-                self.prev_decision="activate_pump"
                 return "activate_pump"
         if(len(self.window)<WINDOW_SIZE):
-            self.prev_decision="insufficient_data"
             return "insufficient_data"
         critical_count=sum(reading["critical"] for reading in self.window)>=CONFIRM_COUNT
         if critical_count:
-            self.prev_decision="activate_alarm"
             return "activate_alarm"
         all_stable=all((not reading["critical"])and (not reading["danger"]) for reading in self.window)
         if all_stable:
-            self.prev_decision="stable"
             return "stable"
-        self.prev_decision="stable"
-        return "stable"
+        return self.prev_decision
         
 patient_states: dict[str, PatientState] = {}
 
@@ -75,11 +71,12 @@ async def send_coap_command(protocol,patient_name,remote_ipv6,resource,state_val
         print(f"[REMOTE] cannot contact {uri}: {e}")
         return False
     
-async def write_decision_event(write_api, bucket, org, patient_name, decision, hr, rr, spo2):
+async def write_decision_event(write_api, bucket, org, patient_name, decision, hr, rr, spo2,status):
     point = (
         Point("panic_decisions")
         .tag("patient_name", patient_name)
         .field("decision", decision)
+        .field("status",status)
         .field("heart_rate", int(hr))
         .field("respiration_rate", int(rr))
         .field("spo2", int(spo2))
@@ -94,7 +91,21 @@ async def evaluate_and_act(protocol,state,sensor_id,hr,rr,spo2,write_api,bucket,
     old_decision=state.prev_decision
     decision=state.evaluate_patient_condition()
     state.prev_decision=decision
-    if(not old_decision==decision):
+    for i, reading in enumerate(state.window):
+        print(f"  [{i+1}/{len(state.window)}] Critical: {reading['critical']} | Danger: {reading['danger']}")
+
+    if(decision=="stable"):
+        state.n_stable=state.n_stable+1
+    else:
+        state.n_stable=0
+    if (state.n_stable==5):
+        send_command=True
+        state.n_stable=0
+    else:
+        send_command=False
+    should_send_commands=(decision!=old_decision)or(send_command)
+    
+    if(should_send_commands):
         match decision:
             case "activate_pump":
                 await send_coap_command(protocol,state.patient_name,actuator_ipv6, "pump", "1")
@@ -102,6 +113,7 @@ async def evaluate_and_act(protocol,state,sensor_id,hr,rr,spo2,write_api,bucket,
                 await send_coap_command(protocol,state.patient_name,sensor_ipv6, "vital_signs", "1")
             case "activate_alarm":
                 await send_coap_command(protocol,state.patient_name,actuator_ipv6, "alarm", "1")
+                await send_coap_command(protocol,state.patient_name,actuator_ipv6, "pump", "0")
                 await send_coap_command(protocol,state.patient_name,sensor_ipv6, "vital_signs", "1")
                     
             case "stable":
@@ -112,8 +124,16 @@ async def evaluate_and_act(protocol,state,sensor_id,hr,rr,spo2,write_api,bucket,
                 print("data is not sufficient")        
             case _:
                 print("Unknown decision")   
-        if decision not in ("insufficient_data", "stable"):
-            await write_decision_event(write_api,bucket, org, state.patient_name, decision, hr, rr, spo2)
+        if decision not in ("insufficient_data"):
+            match(decision):
+                case "activate_pump":
+                    status="danger"
+                case "activate_alarm":
+                    status="critical"
+                case _:
+                    status="stable"
+                    decision="return_to_normal"   
+            await write_decision_event(write_api,bucket, org, state.patient_name, decision, hr, rr, spo2,status)
     return decision     
        
 def load_configuration(filename="config.json"):
@@ -262,6 +282,7 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
 
 
