@@ -26,8 +26,7 @@ class PatientState:
     def __init__(self, patient_name):
         self.patient_name = patient_name
         self.window=deque(maxlen=WINDOW_SIZE)
-        self.pump_active=False
-        self.alarm_active=False
+        self.prev_decision="insufficient_data"
 
     def add_reading(self,hr, rr,spo2):
         n_criteria=sum([hr>=HR_CRITICAL, rr>=RR_CRITICAL, spo2<=SPO2_CRITICAL])
@@ -43,15 +42,20 @@ class PatientState:
         if(len(self.window)>=2):
             last_two=list(self.window)[-2:]
             if all(reading["danger"] for reading in last_two):
+                self.prev_decision="activate_pump"
                 return "activate_pump"
         if(len(self.window)<WINDOW_SIZE):
+            self.prev_decision="insufficient_data"
             return "insufficient_data"
         critical_count=sum(reading["critical"] for reading in self.window)>=CONFIRM_COUNT
         if critical_count:
+            self.prev_decision="activate_alarm"
             return "activate_alarm"
         all_stable=all((not reading["critical"])and (not reading["danger"]) for reading in self.window)
         if all_stable:
+            self.prev_decision="stable"
             return "stable"
+        self.prev_decision="stable"
         return "stable"
         
 patient_states: dict[str, PatientState] = {}
@@ -87,35 +91,29 @@ async def write_decision_event(write_api, bucket, org, patient_name, decision, h
 
 async def evaluate_and_act(protocol,state,sensor_id,hr,rr,spo2,write_api,bucket,org,actuator_ipv6=None,sensor_ipv6=None):
     state.add_reading(hr,rr,spo2)
+    old_decision=state.prev_decision
     decision=state.evaluate_patient_condition()
-    match decision:
-        case "activate_pump":
-            if(not state.pump_active):
-                state.pump_active=True
-                state.alarm_active=True
+    state.prev_decision=decision
+    if(not old_decision==decision):
+        match decision:
+            case "activate_pump":
                 await send_coap_command(protocol,state.patient_name,actuator_ipv6, "pump", "1")
                 await send_coap_command(protocol,state.patient_name,actuator_ipv6, "alarm", "1")
                 await send_coap_command(protocol,state.patient_name,sensor_ipv6, "vital_signs", "1")
-        case "activate_alarm":
-            if(not state.alarm_active):
-                state.alarm_active=True
+            case "activate_alarm":
                 await send_coap_command(protocol,state.patient_name,actuator_ipv6, "alarm", "1")
                 await send_coap_command(protocol,state.patient_name,sensor_ipv6, "vital_signs", "1")
-                
-        case "stable":
-            if(state.alarm_active):
-                await send_coap_command(protocol,state.patient_name,actuator_ipv6, "alarm", "0")
-                if(state.pump_active):
+                    
+            case "stable":
+                    await send_coap_command(protocol,state.patient_name,actuator_ipv6, "alarm", "0")
                     await send_coap_command(protocol,state.patient_name,actuator_ipv6, "pump", "0")
-                    state.pump_active=False
-                state.alarm_active=False
-                await send_coap_command(protocol,state.patient_name,sensor_ipv6, "vital_signs", "0")
-        case "insufficient_data":
-            print("data is not sufficient")        
-        case _:
-            print("Unknown decision")   
-    if decision not in ("insufficient_data", "stable"):
-        await write_decision_event(write_api,bucket, org, state.patient_name, decision, hr, rr, spo2)
+                    await send_coap_command(protocol,state.patient_name,sensor_ipv6, "vital_signs", "0")
+            case "insufficient_data":
+                print("data is not sufficient")        
+            case _:
+                print("Unknown decision")   
+        if decision not in ("insufficient_data", "stable"):
+            await write_decision_event(write_api,bucket, org, state.patient_name, decision, hr, rr, spo2)
     return decision     
        
 def load_configuration(filename="config.json"):
