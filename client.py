@@ -91,6 +91,8 @@ async def evaluate_and_act(protocol,state,sensor_id,hr,rr,spo2,write_api,bucket,
     old_decision=state.prev_decision
     decision=state.evaluate_patient_condition()
     state.prev_decision=decision
+    for i, reading in enumerate(state.window):
+        print(f"  [{i+1}/{len(state.window)}] Critical: {reading['critical']} | Danger: {reading['danger']}")
 
     if(decision=="stable"):
         state.n_stable=state.n_stable+1
