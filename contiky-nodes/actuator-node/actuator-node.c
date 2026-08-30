@@ -1,4 +1,5 @@
 #include "contiki.h"
+#include "dev/button-hal.h"
 #include "coap-engine.h"
 #include "dev/leds.h"
 #include "os/sys/log.h"
@@ -10,6 +11,7 @@
 #define LOG_MODULE "Actuator Node"
 #define LOG_LEVEL LOG_LEVEL_INFO
 #define SENSOR_NAME "anode_0"
+#define DOUBLE_PRESS_INTERVAL (CLOCK_SECOND/2)
 
 PROCESS(led_blink_process,"led blink");
 PROCESS(actuator_node, "Actuator Node");
@@ -22,7 +24,6 @@ extern coap_resource_t pump_resource;
 extern coap_resource_t alarm_resource;
 
 static void res_alarm_get_handler(coap_message_t *request, coap_message_t *response,uint8_t *buffer, uint16_t preferred_size, int32_t *offset){
-    char msg[32];
     int len = snprintf((char *)buffer, preferred_size,"{\"alarm\": \"%s\"}",alarm_active?"ON":"OFF");
     coap_set_header_content_format(response, TEXT_PLAIN);
     coap_set_payload(response, buffer, len);
@@ -57,7 +58,6 @@ static void res_alarm_put_handler(coap_message_t *request, coap_message_t *respo
     }
 }
 static void res_pump_get_handler(coap_message_t *request, coap_message_t *response,uint8_t *buffer, uint16_t preferred_size, int32_t *offset){
-    char msg[32];
     int len = snprintf((char *)buffer, preferred_size,"{\"pump\": \"%s\"}",pump_active?"ON":"OFF");
     coap_set_header_content_format(response, TEXT_PLAIN);
     coap_set_payload(response, buffer,len);
@@ -88,6 +88,23 @@ static void res_pump_put_handler(coap_message_t *request, coap_message_t *respon
     } else {
         coap_set_status_code(response, BAD_REQUEST_4_00);
     }
+}
+static void deactivate_pump_manual(void){
+    if(!pump_active){
+        return;
+    }
+    pump_active=false;
+    leds_single_on(LEDS_YELLOW);
+    LOG_INFO("[ACTUATOR] pump manually shut down\n");
+}
+static void deactivate_alarm_manual(void){
+    if(!alarm_active){
+        return;
+    }
+    alarm_active=false;
+    leds_off(LEDS_RED);
+    leds_on(LEDS_GREEN);
+    LOG_INFO("[ACTUATOR] alarm manually deactivated\n");
 }
 
 
@@ -123,13 +140,38 @@ PROCESS_THREAD(led_blink_process,ev,data){
 }
 
 PROCESS_THREAD(actuator_node,ev,data){
+    static struct etimer single_press_timer;
+    static bool press_pending=false;
     PROCESS_BEGIN();
     LOG_INFO("actuator node starting");
     leds_on(LEDS_GREEN);
     coap_activate_resource(&alarm_resource,"alarm");
     coap_activate_resource(&pump_resource,"pump");
     while(1){
-        PROCESS_YIELD();
+        PROCESS_WAIT_EVENT();
+        if(ev==button_hal_release_event){
+            button_hal_button_t *btn=(button_hal_button_t*)data;
+            if(btn->press_duration_seconds<1){
+                if(press_pending){
+                    press_pending=false;
+                    etimer_stop(&single_press_timer);
+                    LOG_INFO("[ACTUATOR] double press event detected, shutting off manual pump\n");
+                    deactivate_pump_manual();
+                }
+                else{
+                    press_pending=true;
+                    etimer_set(&single_press_timer,DOUBLE_PRESS_INTERVAL);
+                }
+            }
+        }
+        else if(ev==PROCESS_EVENT_TIMER&&data==&single_press_timer){
+                if(press_pending){
+                    press_pending=false;
+                    LOG_INFO("[ACTUATOR]double press event detected, shutting off manual pump\n");
+                    deactivate_alarm_manual();
+                    
+                }
+            }
 
     }
     PROCESS_END();

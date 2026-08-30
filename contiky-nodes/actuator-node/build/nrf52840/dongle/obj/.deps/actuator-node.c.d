@@ -67,6 +67,13 @@ build/nrf52840/dongle/obj/actuator-node.o: actuator-node.c \
  /home/riccardo/contiki-ng/arch/cpu/nrf52840/./rtimer-arch.h \
  /home/riccardo/contiki-ng/os/sys/pt.h \
  /home/riccardo/contiki-ng/os/sys/clock.h \
+ /home/riccardo/contiki-ng/os/dev/button-hal.h \
+ /home/riccardo/contiki-ng/os/dev/gpio-hal.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/./dev/gpio-hal-arch.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/drivers/include/nrfx_gpiote.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/hal/nrf_gpiote.h \
+ /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/hal/nrf_gpio.h \
+ /home/riccardo/contiki-ng/os/sys/ctimer.h \
  /home/riccardo/contiki-ng/os/net/app-layer/coap/coap-engine.h \
  /home/riccardo/contiki-ng/os/net/app-layer/coap/coap.h \
  /home/riccardo/contiki-ng/os/net/app-layer/coap/coap-constants.h \
@@ -85,11 +92,6 @@ build/nrf52840/dongle/obj/actuator-node.o: actuator-node.c \
  /home/riccardo/contiki-ng/os/net/app-layer/coap/coap-separate.h \
  /home/riccardo/contiki-ng/os/net/app-layer/coap/coap-observe-client.h \
  /home/riccardo/contiki-ng/os/dev/leds.h \
- /home/riccardo/contiki-ng/os/dev/gpio-hal.h \
- /home/riccardo/contiki-ng/arch/cpu/nrf52840/./dev/gpio-hal-arch.h \
- /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/drivers/include/nrfx_gpiote.h \
- /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/hal/nrf_gpiote.h \
- /home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/hal/nrf_gpio.h \
  /home/riccardo/contiki-ng/os/sys/log.h \
  /home/riccardo/contiki-ng/os/sys/log-conf.h
 
@@ -229,6 +231,20 @@ build/nrf52840/dongle/obj/actuator-node.o: actuator-node.c \
 
 /home/riccardo/contiki-ng/os/sys/clock.h:
 
+/home/riccardo/contiki-ng/os/dev/button-hal.h:
+
+/home/riccardo/contiki-ng/os/dev/gpio-hal.h:
+
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/./dev/gpio-hal-arch.h:
+
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/drivers/include/nrfx_gpiote.h:
+
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/hal/nrf_gpiote.h:
+
+/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/hal/nrf_gpio.h:
+
+/home/riccardo/contiki-ng/os/sys/ctimer.h:
+
 /home/riccardo/contiki-ng/os/net/app-layer/coap/coap-engine.h:
 
 /home/riccardo/contiki-ng/os/net/app-layer/coap/coap.h:
@@ -264,16 +280,6 @@ build/nrf52840/dongle/obj/actuator-node.o: actuator-node.c \
 /home/riccardo/contiki-ng/os/net/app-layer/coap/coap-observe-client.h:
 
 /home/riccardo/contiki-ng/os/dev/leds.h:
-
-/home/riccardo/contiki-ng/os/dev/gpio-hal.h:
-
-/home/riccardo/contiki-ng/arch/cpu/nrf52840/./dev/gpio-hal-arch.h:
-
-/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/drivers/include/nrfx_gpiote.h:
-
-/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/hal/nrf_gpiote.h:
-
-/home/riccardo/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/hal/nrf_gpio.h:
 
 /home/riccardo/contiki-ng/os/sys/log.h:
 
