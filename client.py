@@ -52,6 +52,15 @@ class PatientState:
         if all_stable:
             return "stable"
         return self.prev_decision
+    def anomaly_recover(self)->bool:
+        if (len(self.window)<2):
+            return False
+        last = self.window[-1]
+        prev = self.window[-2]
+        last_is_normal = (not last["critical"]) and (not last["danger"])
+        prev_is_abnormal = prev["critical"] or prev["danger"]
+        return last_is_normal and prev_is_abnormal
+
         
 patient_states: dict[str, PatientState] = {}
 
@@ -90,7 +99,8 @@ async def evaluate_and_act(protocol,state,sensor_id,hr,rr,spo2,write_api,bucket,
     old_decision=state.prev_decision
     decision=state.evaluate_patient_condition()
     state.prev_decision=decision
-    if(not old_decision==decision):
+    should_send_commands=(old_decision != decision)or(decision=="stable" and state.anomaly_recover())
+    if(should_send_commands):
         match decision:
             case "activate_pump":
                 await send_coap_command(protocol,state.patient_name,actuator_ipv6, "pump", "1")
