@@ -27,6 +27,7 @@ class PatientState:
         self.patient_name = patient_name
         self.window=deque(maxlen=WINDOW_SIZE)
         self.prev_decision="insufficient_data"
+        self.n_stable=0;
 
     def add_reading(self,hr, rr,spo2):
         n_criteria=sum([hr>=HR_CRITICAL, rr>=RR_CRITICAL, spo2<=SPO2_CRITICAL])
@@ -52,15 +53,6 @@ class PatientState:
         if all_stable:
             return "stable"
         return self.prev_decision
-    def anomaly_recover(self)->bool:
-        if (len(self.window)<2):
-            return False
-        last = self.window[-1]
-        prev = self.window[-2]
-        last_is_normal = (not last["critical"]) and (not last["danger"])
-        prev_is_abnormal = prev["critical"] or prev["danger"]
-        return last_is_normal and prev_is_abnormal
-
         
 patient_states: dict[str, PatientState] = {}
 
@@ -99,7 +91,18 @@ async def evaluate_and_act(protocol,state,sensor_id,hr,rr,spo2,write_api,bucket,
     old_decision=state.prev_decision
     decision=state.evaluate_patient_condition()
     state.prev_decision=decision
-    should_send_commands=(old_decision != decision)or(decision=="stable" and state.anomaly_recover())
+
+    if(decision=="stable"):
+        state.n_stable=state.n_stable+1
+    else:
+        state.n_stable=0
+    if (state.n_stable==5):
+        send_command=True
+        state.n_stable=0
+    else:
+        send_command=False
+    should_send_commands=(decision!=old_decision)or(send_command)
+    
     if(should_send_commands):
         match decision:
             case "activate_pump":
