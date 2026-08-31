@@ -124,7 +124,7 @@ async def evaluate_and_act(protocol,state,sensor_id,hr,rr,spo2,write_api,bucket,
                 print("data is not sufficient")        
             case _:
                 print("Unknown decision")   
-        if decision not in ("insufficient_data"):
+        if decision !="insufficient_data":
             match(decision):
                 case "activate_pump":
                     status="danger"
