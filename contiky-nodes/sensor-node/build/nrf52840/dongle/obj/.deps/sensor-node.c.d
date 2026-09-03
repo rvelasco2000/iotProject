@@ -93,6 +93,8 @@ build/nrf52840/dongle/obj/sensor-node.o: sensor-node.c \
  /home/riccardo/contiki-ng/os/net/app-layer/coap/coap-observe.h \
  /home/riccardo/contiki-ng/os/net/app-layer/coap/coap-separate.h \
  /home/riccardo/contiki-ng/os/net/app-layer/coap/coap-observe-client.h \
+ /home/riccardo/contiki-ng/os/net/app-layer/coap/coap-blocking-api.h \
+ /home/riccardo/contiki-ng/os/net/app-layer/coap/coap-request-state.h \
  /home/riccardo/contiki-ng/os/sys/log.h \
  /home/riccardo/contiki-ng/os/sys/log-conf.h model/vital_signs_panic.h \
  /home/riccardo/contiki-ng/examples/newIotProject/venv/lib/python3.12/site-packages/emlearn/eml_net.h \
@@ -287,6 +289,10 @@ build/nrf52840/dongle/obj/sensor-node.o: sensor-node.c \
 /home/riccardo/contiki-ng/os/net/app-layer/coap/coap-separate.h:
 
 /home/riccardo/contiki-ng/os/net/app-layer/coap/coap-observe-client.h:
+
+/home/riccardo/contiki-ng/os/net/app-layer/coap/coap-blocking-api.h:
+
+/home/riccardo/contiki-ng/os/net/app-layer/coap/coap-request-state.h:
 
 /home/riccardo/contiki-ng/os/sys/log.h:
 
