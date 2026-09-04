@@ -18,8 +18,10 @@ async def send_coap_command(ipv6, resource, payload_val):
     payload=str(payload_val).encode("utf-8")
     request=Message(code=PUT, uri=uri, payload=payload)
     try:
-        response=await protocol.request(request).response
+        response = await asyncio.wait_for(protocol.request(request).response, timeout=5.0)
         print(f"\n[COAP] Resource'{resource}' on [{ipv6}] set to{payload_val} Status: {response.code}")
+    except asyncio.TimeoutError:
+        print(f"\n[COAP ERROR] Timeout occurred while contacting {uri}")
     except Exception as e:
         print(f"\n[COAP ERROR] cannot contact {uri}: {e}")
 
@@ -35,7 +37,6 @@ def influx_query(influx_cfg,query_type,patient_name):
             from(bucket:"{bucket_vitals}")
             |> range(start: -15m)
             |> filter(fn: (r) => r._measurement == "patient_vitals" and r.patient_name == "{patient_name}")
-            |> last()
         '''
         print(f"\nLast vital_signs (15 min) for {patient_name}")
     else:
@@ -70,10 +71,22 @@ async def main():
     patients, influx_cfg = load_config()
     if not patients:
         return
-    print("=== SELECT PATIENT NAME ===")
-    for i, p in enumerate(patients):
-        print(f"[{i}] {p.get('patient_name')}")
-    patient_selected=int(input("Select Patient: "))
+    while True:
+        print("=== SELECT PATIENT NAME ===")
+        for i, p in enumerate(patients):
+            print(f"[{i}] {p.get('patient_name')}")
+        
+        user_selected=input("Select Patient: ")
+        try:
+            patient_selected=int(user_selected)
+        except ValueError:
+            print("Invalid input. Please enter a number.")
+            continue
+        if(patient_selected < 0 or patient_selected >= len(patients)):
+            print("Invalid selection. Please try again.")
+            continue
+        else:
+            break
     patient = patients[patient_selected]
     patient_name= patient.get("patient_name")
     
@@ -101,3 +114,4 @@ async def main():
                 print("please select a valid option")    
 if __name__ == "__main__":
     asyncio.run(main())                        
+

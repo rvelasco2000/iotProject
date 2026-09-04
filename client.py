@@ -1,12 +1,12 @@
 import asyncio
 from aiocoap import *
+from aiocoap import resource
 import cbor2
 import json
 import os
-from datetime import datetime
 from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
-from datetime import datetime
+from datetime import datetime,timedelta
 from collections import deque
 
 from influxdb_client import Point
@@ -17,7 +17,7 @@ HR_CRITICAL=100
 RR_CRITICAL=24
 SPO2_CRITICAL=92
 
-#this indentify danger threshold for the activation of O2 pump
+#this identify danger threshold for the activation of O2 pump
 SPO2_DANGER=85
 WINDOW_SIZE=5
 CONFIRM_COUNT=4
@@ -27,7 +27,7 @@ class PatientState:
         self.patient_name = patient_name
         self.window=deque(maxlen=WINDOW_SIZE)
         self.prev_decision="insufficient_data"
-        self.n_stable=0;
+        self.n_stable=0
 
     def add_reading(self,hr, rr,spo2):
         n_criteria=sum([hr>=HR_CRITICAL, rr>=RR_CRITICAL, spo2<=SPO2_CRITICAL])
@@ -117,9 +117,9 @@ async def evaluate_and_act(protocol,state,sensor_id,hr,rr,spo2,write_api,bucket,
                 await send_coap_command(protocol,state.patient_name,sensor_ipv6, "vital_signs", "1")
                     
             case "stable":
-                    await send_coap_command(protocol,state.patient_name,actuator_ipv6, "alarm", "0")
-                    await send_coap_command(protocol,state.patient_name,actuator_ipv6, "pump", "0")
-                    await send_coap_command(protocol,state.patient_name,sensor_ipv6, "vital_signs", "0")
+                await send_coap_command(protocol,state.patient_name,actuator_ipv6, "alarm", "0")
+                await send_coap_command(protocol,state.patient_name,actuator_ipv6, "pump", "0")
+                await send_coap_command(protocol,state.patient_name,sensor_ipv6, "vital_signs", "0")
             case "insufficient_data":
                 print("data is not sufficient")        
             case _:
@@ -144,49 +144,44 @@ def load_configuration(filename="config.json"):
 
 async def write_to_influx(write_api, bucket, org, patient_name, cbor_data, reception_time):
     try:
-        events = cbor_data.get('e', [])
-        point = Point("patient_vitals") \
-            .tag("patient_name", patient_name) \
-            .tag("sensor_bn", str(cbor_data.get('bn', 'unknown'))) \
-            .tag("timestamp", reception_time)
-            
-        has_data = False
-        for event in events:
-            name = event.get('n')
-            value = event.get('v')
-            
-            if name == "spo2":
-                point.field("spo2", int(value))
-                has_data = True
-            elif name == "resRate":
-                point.field("respiration_rate", int(value))
-                has_data = True
-            elif name == "heartRate":
-                point.field("heart_rate", int(value))
-                has_data = True
-
-        if has_data:
+        vitals_list = extract_vitals(cbor_data)
+        sensor_bn = str(cbor_data.get('bn', 'unknown'))
+        interval=int(cbor_data.get('int', 30))
+        total_readings=len(vitals_list)
+        
+        for idx, (hr, rr, spo2) in enumerate(vitals_list):
+            seconds_elapsed=(total_readings-1-idx)*interval;
+            historical_time = reception_time-timedelta(seconds=seconds_elapsed);
+            point = Point("patient_vitals") \
+                .tag("patient_name", patient_name) \
+                .tag("sensor_bn", sensor_bn) \
+                .time(historical_time) \
+                .field("heart_rate", int(hr)) \
+                .field("respiration_rate", int(rr)) \
+                .field("spo2", int(spo2))  
             await write_api.write(bucket=bucket, org=org, record=point)
             
     except Exception as e:
         print(f"[INFLUXDB ERROR] Failed to write data for {patient_name}: {e}")
 
 def extract_vitals(cbor_data):
-    values={}
-    events=cbor_data.get("e",[])
+    events=cbor_data.get('e',[])
+    readings=[]
+    current={}
     for event in events:
         name = event.get('n')
         value = event.get('v')
         if name == "heartRate":
-            values["hr"] = value
+            current["hr"] = value
         elif name == "resRate":
-            values["rr"] = value
+            current["rr"] = value
         elif name == "spo2":
-            values["spo2"] = value
-    if {"hr", "rr", "spo2"} <= values.keys():
-        return values["hr"], values["rr"], values["spo2"]
-    return None
-
+            current["spo2"] = value
+        if {"hr", "rr", "spo2"} <= current.keys():
+            readings.append((current["hr"], current["rr"], current["spo2"]))
+            current = {}
+    return readings
+       
 async def observe_sensor(protocol, app_name, sensor_id, patient_name, ipv6, write_api, influx_bucket, influx_org,decision_bucket,actuator_ipv6=None):
     resource_path = "vital_signs"
     uri = f"coap://[{ipv6}]/{resource_path}"
@@ -196,18 +191,19 @@ async def observe_sensor(protocol, app_name, sensor_id, patient_name, ipv6, writ
 
     async def handle_packet(payload,label):
         if (len(payload)==0):
-            return;
+            return
         timezone_italy = ZoneInfo("Europe/Rome")
-        reception_time = datetime.now(timezone_italy).strftime("%d-%m-%Y %H:%M:%S")
+        reception_time = datetime.now(timezone_italy)
         cbor_data = cbor2.loads(payload)
         print(f"\n=== {label} [{app_name}] ===")
         print(f"Patient: {patient_name} (ID: {sensor_id}) | Received at: {reception_time}")
         print(f"Decoded CBOR: {json.dumps(cbor_data, indent=2)}")
         await write_to_influx(write_api, influx_bucket, influx_org, patient_name, cbor_data, reception_time)
-        vitals=extract_vitals(cbor_data)
-        if(vitals is not None):
-            hh,rr,spo2=vitals
-            decision = await evaluate_and_act(protocol, state, sensor_id, hh, rr, spo2,write_api, decision_bucket, influx_org,actuator_ipv6,ipv6)
+        readings=extract_vitals(cbor_data)
+        if len(readings) > 1:
+            print(f"[BUFFER] Packet with {len(readings)} buffered readings received from {patient_name}")
+        for hr, rr, spo2 in readings:
+            decision = await evaluate_and_act(protocol, state, sensor_id, hr, rr, spo2,write_api, decision_bucket, influx_org,actuator_ipv6,ipv6)        
             print(f"[DECISION] {patient_name}: {decision}")
     try:
         first_response = await pr.response
@@ -222,6 +218,9 @@ async def observe_sensor(protocol, app_name, sensor_id, patient_name, ipv6, writ
     except Exception as e:
         print(f"[COMMUNICATION ERROR] Patient {patient_name} (Node {sensor_id}): {e}")
 
+class PingResource(resource.Resource):
+    async def render_post(self, request):
+        return Message(code=CHANGED, payload=b"ACK")
 async def main():
     try:
         config = load_configuration()
@@ -249,12 +248,14 @@ async def main():
     print(f"Starting '{app_name}' monitoring system...")
     print(f"Connected to InfluxDB at {influx_cfg.get('url')}")
     print(f"Configured to monitor {len(patients_cfg)} patient(s) concurrently.\n")
-    
-    protocol = await Context.create_client_context()
+
+    site=resource.Site()
+    site.add_resource(["ping"], PingResource())
+    protocol = await Context.create_server_context(site)
 
     try:
-       tasks=[]
-       for patient in patients_cfg:
+        tasks=[]
+        for patient in patients_cfg:
             patient_name=patient.get("patient_name")
             sensor_nodes=patient.get("sensor_nodes",[])
             actuator_nodes=patient.get("actuator_nodes",[])
@@ -272,16 +273,17 @@ async def main():
                     decisions_bucket,
                     actuator_ipv6,
                 ))
-            if not tasks:
-                print("No valid sensor nodes to monitor.")
-                return
-            await asyncio.gather(*tasks)
+        if not tasks:
+            print("No valid sensor nodes to monitor.")
+            return
+        await asyncio.gather(*tasks)
         
     finally:
         await influx_client.close()
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
 
 

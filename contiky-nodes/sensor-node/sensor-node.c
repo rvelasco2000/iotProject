@@ -4,6 +4,7 @@
 #include "dev/button-hal.h"
 #include "coap-engine.h"
 #include "sys/etimer.h"
+#include "coap-blocking-api.h"
 #include "os/sys/log.h"
 #include "model/vital_signs_panic.h"
 #include <string.h>
@@ -24,10 +25,26 @@
 #define MAX_SPO2 100.0f
 #define MIN_SPO2 85.0f
 #define DOUBLE_PRESS_INTERVAL (CLOCK_SECOND/2)
+#define PYTHON_APP_URI "coap://[fd00::1]"
+#define MAX_BUFFERED_READINGS 5
 PROCESS(sensor_node, "Sensor Node");
+PROCESS(ping_client_process, "Ping Client Process");
 AUTOSTART_PROCESSES(&sensor_node);
 
+typedef struct{
+    int hr;
+    int rr;
+    int spo2;
+}vital_data_t;
+
 // Global variables
+static bool ping_started=false;
+static vital_data_t data_buffer[MAX_BUFFERED_READINGS];
+static int buffer_count=0;
+static int head=0;
+static int tail=0;
+static bool network_connected=true;
+static clock_time_t ping_interval=CLOCK_SECOND*30;
 static clock_time_t interval=CLOCK_SECOND*30;
 static struct etimer blink_et;
 static int spo2=95;
@@ -48,7 +65,33 @@ static const float FEATURE_MEAN[3]  = {76.1263f, 16.3470f, 96.5792f};  /* heart_
 static const float FEATURE_SCALE[3] = {5.4737f, 2.1339f, 1.3945f};
 static clock_time_t last_release_time=0;
 
+static void ping_chunk_handler(coap_message_t *response){
+    if(response==NULL){
+        if(network_connected){
+            network_connected=false;
+            ping_interval=CLOCK_SECOND*5;
+            LOG_INFO("[NETWORK]no answer from heartbeat server unreachable or timeout \n");
+        }
+    }
+    else{
+        if(!network_connected){
+            network_connected=true;
+            ping_interval=CLOCK_SECOND*30;
+            coap_notify_observers(&vital_signs_resource);
+            LOG_INFO("[NETWORK]server reachable emptying buffer \n");
+        }
+    }
+}
+
 static void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset){
+    if(!ping_started) {
+        uint32_t observe = 0;
+        if(coap_get_header_observe(request, &observe) && observe == 0) {
+            ping_started = true;
+            process_start(&ping_client_process, NULL);
+            LOG_INFO("[NETWORK] observer connected, started ping\n");
+        }
+    }
     cbor_writer_state_t state;
     
     cbor_init_writer(&state, buffer, preferred_size);
@@ -68,12 +111,22 @@ static void res_get_handler(coap_message_t *request, coap_message_t *response, u
         //base name
         cbor_write_text(&state, "bn", strlen("bn"));
         cbor_write_text(&state, SENSOR_NAME, strlen(SENSOR_NAME));
+        cbor_write_text(&state, "int", strlen("int"));
+        cbor_write_unsigned(&state, interval / CLOCK_SECOND);
         //base time
 //        cbor_write_text(&state, "bt", strlen("bt"));
 //        cbor_write_unsigned(&state, clock_seconds());
         //array of vital signs
         cbor_write_text(&state, "e", strlen("e"));
         cbor_open_array(&state);
+        if(buffer_count==0){
+            data_buffer[0].hr=heart_rate;
+            data_buffer[0].rr=respiration_rate;
+            data_buffer[0].spo2=spo2;
+            buffer_count=1;
+        }
+        int current_idx=tail;
+        for(int i=0;i<buffer_count;i++){
             //spo2
             cbor_open_map(&state);
                 cbor_write_text(&state, "n", strlen("n"));
@@ -81,7 +134,7 @@ static void res_get_handler(coap_message_t *request, coap_message_t *response, u
                 cbor_write_text(&state, "u", strlen("u"));
                 cbor_write_text(&state, "%", strlen("%"));
                 cbor_write_text(&state, "v", strlen("v"));
-                cbor_write_unsigned(&state, spo2);
+                cbor_write_unsigned(&state, data_buffer[current_idx].spo2);
             cbor_close_map(&state);
             //respiration rate
             cbor_open_map(&state);
@@ -90,7 +143,7 @@ static void res_get_handler(coap_message_t *request, coap_message_t *response, u
                 cbor_write_text(&state, "u", strlen("u"));
                 cbor_write_text(&state, "b/min", strlen("b/min"));
                 cbor_write_text(&state, "v", strlen("v"));
-                cbor_write_unsigned(&state, respiration_rate);
+                cbor_write_unsigned(&state, data_buffer[current_idx].rr);
             cbor_close_map(&state);
             //heart rate
             cbor_open_map(&state);
@@ -99,15 +152,20 @@ static void res_get_handler(coap_message_t *request, coap_message_t *response, u
                 cbor_write_text(&state, "u", strlen("u"));
                 cbor_write_text(&state, "bpm", strlen("bpm"));
                 cbor_write_text(&state, "v", strlen("v"));
-                cbor_write_unsigned(&state, heart_rate);
+                cbor_write_unsigned(&state, data_buffer[current_idx].hr);
             cbor_close_map(&state);
+            current_idx=(current_idx+1)%MAX_BUFFERED_READINGS;
+        }
+        buffer_count=0;
+        head=0;
+        tail=0;
         cbor_close_array(&state);
     cbor_close_map(&state);
 
     size_t len = cbor_end_writer(&state);
     coap_set_header_content_format(response, APPLICATION_CBOR);
     coap_set_payload(response, buffer, len);
-    LOG_INFO("i have send:spo2: %d, Respiration Rate: %d, Heart Rate: %d\n sended in %zu byte", spo2, respiration_rate, heart_rate,len);
+    LOG_INFO("i have send:spo2: %d, Respiration Rate: %d, Heart Rate: %d sended in %zu byte\n", spo2, respiration_rate, heart_rate,len);
 
 } 
 //funtion to clamp the random values generated to a specific range to avoid data too high that the model never saw
@@ -240,7 +298,23 @@ static void res_event_handler(void){
     if (run_inference(heart_rate,respiration_rate,spo2) && !panic_mode){
         enter_panic_mode();
     }
-    coap_notify_observers(&vital_signs_resource);
+    data_buffer[head].hr=heart_rate;
+    data_buffer[head].rr=respiration_rate;
+    data_buffer[head].spo2=spo2;
+    head = (head+1)%MAX_BUFFERED_READINGS;
+    if(buffer_count<MAX_BUFFERED_READINGS){
+        buffer_count++;
+    }
+    else{
+        tail=(tail+1)%MAX_BUFFERED_READINGS;
+    }
+    if(network_connected){
+        coap_notify_observers(&vital_signs_resource);
+
+    }
+    else{
+        LOG_INFO("[NETWORK]server unreachable, buffering data\n");
+    }
     LOG_INFO("spo2: %d, Respiration Rate: %d, Heart Rate: %d\n", spo2, respiration_rate, heart_rate);
 }
 EVENT_RESOURCE(vital_signs_resource,
@@ -250,6 +324,28 @@ EVENT_RESOURCE(vital_signs_resource,
                res_put_handler,
                NULL,
                res_event_handler);
+
+PROCESS_THREAD(ping_client_process, ev, data) {
+  static struct etimer ping_timer;
+  static coap_endpoint_t server_ep;
+  static coap_message_t request[1];
+
+  PROCESS_BEGIN();
+  coap_endpoint_parse(PYTHON_APP_URI, strlen(PYTHON_APP_URI), &server_ep);
+  etimer_set(&ping_timer, ping_interval);
+  while(1) {
+    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&ping_timer));
+    coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
+    coap_set_header_uri_path(request, "ping");
+    coap_set_payload(request, (uint8_t *)SENSOR_NAME, strlen(SENSOR_NAME));
+    COAP_BLOCKING_REQUEST(&server_ep, request, ping_chunk_handler);
+    etimer_set(&ping_timer, ping_interval);
+  }
+  PROCESS_END();
+}
+
+
+
 PROCESS_THREAD(sensor_node,ev,data){
         static struct etimer et;
         PROCESS_BEGIN();
@@ -301,6 +397,7 @@ PROCESS_THREAD(sensor_node,ev,data){
         }
     PROCESS_END();
 }
+
 
 
 
