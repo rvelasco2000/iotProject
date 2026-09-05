@@ -39,6 +39,7 @@ typedef struct{
 
 // Global variables
 static bool ping_started=false;
+static process_event_t event_start_ping;
 static vital_data_t data_buffer[MAX_BUFFERED_READINGS];
 static int buffer_count=0;
 static int head=0;
@@ -58,7 +59,10 @@ typedef enum{
     PATIENT_DANGER,
 }patient_test_status_t;
 
+
 static patient_test_status_t test_status=PATIENT_STABLE;
+static clock_time_t last_heartbeat_time=0;
+static struct etimer watchdog_et;
 
 extern coap_resource_t vital_signs_resource;
 static const float FEATURE_MEAN[3]  = {76.1263f, 16.3470f, 96.5792f};  /* heart_rate  respiratory_rate  oxygen_saturation */
@@ -74,9 +78,10 @@ static void ping_chunk_handler(coap_message_t *response){
         }
     }
     else{
+        last_heartbeat_time = clock_time();
         if(!network_connected){
             network_connected=true;
-            ping_interval=CLOCK_SECOND*5;
+            ping_interval=CLOCK_SECOND*10;
             coap_notify_observers(&vital_signs_resource);
             LOG_INFO("[NETWORK]server reachable emptying buffer \n");
         }
@@ -88,7 +93,8 @@ static void res_get_handler(coap_message_t *request, coap_message_t *response, u
         uint32_t observe = 0;
         if(coap_get_header_observe(request, &observe) && observe == 0) {
             ping_started = true;
-            process_start(&ping_client_process, NULL);
+            last_heartbeat_time=clock_time();
+            process_post(&sensor_node, event_start_ping, NULL);
             LOG_INFO("[NETWORK] observer connected, started ping\n");
         }
     }
@@ -384,16 +390,27 @@ PROCESS_THREAD(ping_client_process, ev, data) {
 PROCESS_THREAD(sensor_node,ev,data){
         static struct etimer et;
         PROCESS_BEGIN();
+        event_start_ping = process_alloc_event();
         printf("%p\n",eml_error_str);
         printf("%p\n",eml_net_activation_function_strs);
         coap_activate_resource(&vital_signs_resource, "vital_signs");
         etimer_set(&et, interval);
+        etimer_set(&watchdog_et, CLOCK_SECOND*5);
 	    leds_on(LEDS_GREEN);
 
         while(1){
             PROCESS_YIELD();
             if(ev==PROCESS_EVENT_TIMER){
-                if(data==&et){
+                if(data==&watchdog_et){
+                    if(ping_started && network_connected) {
+                        if(clock_time() - last_heartbeat_time > CLOCK_SECOND * 15) {
+                            network_connected = false;
+                            LOG_INFO("[WATCHDOG] Nessuna risposta dal client per 15s, avvio buffering\n");
+                        }
+                    }
+                    etimer_reset(&watchdog_et);
+                }
+                else if(data==&et){
                     vital_signs_resource.trigger();
                     etimer_set(&et, interval);
                     LOG_INFO("Sensor Node is running\n");
@@ -428,7 +445,20 @@ PROCESS_THREAD(sensor_node,ev,data){
                 }
                 
             }
+            else if(ev == event_start_ping) {
+                process_start(&ping_client_process, NULL);
+                LOG_INFO("[NETWORK] Ping process started safely outside CoAP handler\n");
+            }
             
         }
     PROCESS_END();
 }
+
+
+
+
+
+
+
+
+

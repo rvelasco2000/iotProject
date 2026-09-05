@@ -221,7 +221,11 @@ async def observe_sensor(protocol, app_name, sensor_id, patient_name, ipv6, writ
             return
         timezone_italy = ZoneInfo("Europe/Rome")
         reception_time = datetime.now(timezone_italy)
-        cbor_data = cbor2.loads(payload)
+        try:
+            cbor_data=cbor2.loads(payload)
+        except Exception as e:
+            print(f"[CBOR ERROR] Payload malformato da {patient_name} ignorato: {e}")
+            return
         print(f"\n=== {label} [{app_name}] ===")
         print(f"Patient: {patient_name} (ID: {sensor_id}) | Received at: {reception_time}")
         print(f"Decoded CBOR: {json.dumps(cbor_data, indent=2)}")
