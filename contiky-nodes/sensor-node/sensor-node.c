@@ -76,7 +76,7 @@ static void ping_chunk_handler(coap_message_t *response){
     else{
         if(!network_connected){
             network_connected=true;
-            ping_interval=CLOCK_SECOND*10;
+            ping_interval=CLOCK_SECOND*5;
             coap_notify_observers(&vital_signs_resource);
             LOG_INFO("[NETWORK]server reachable emptying buffer \n");
         }
@@ -324,21 +324,29 @@ static void res_event_handler(void){
     if (run_inference(heart_rate,respiration_rate,spo2) && !panic_mode){
         enter_panic_mode();
     }
-    data_buffer[head].hr=heart_rate;
-    data_buffer[head].rr=respiration_rate;
-    data_buffer[head].spo2=spo2;
-    head = (head+1)%MAX_BUFFERED_READINGS;
-    if(buffer_count<MAX_BUFFERED_READINGS){
-        buffer_count++;
-    }
-    else{
-        tail=(tail+1)%MAX_BUFFERED_READINGS;
-    }
     if(network_connected){
+        data_buffer[0].hr = heart_rate;
+        data_buffer[0].rr = respiration_rate;
+        data_buffer[0].spo2 = spo2;
+        
+        buffer_count = 1;
+        head = 1;
+        tail = 0;
+        
         coap_notify_observers(&vital_signs_resource);
-
     }
-    else{
+    else {
+        data_buffer[head].hr = heart_rate;
+        data_buffer[head].rr = respiration_rate;
+        data_buffer[head].spo2 = spo2;
+        
+        head = (head+1)%MAX_BUFFERED_READINGS;
+        if(buffer_count < MAX_BUFFERED_READINGS){
+            buffer_count++;
+        }
+        else{
+            tail = (tail+1)%MAX_BUFFERED_READINGS;
+        }
         LOG_INFO("[NETWORK]server unreachable, buffering data\n");
     }
     LOG_INFO("spo2: %d, Respiration Rate: %d, Heart Rate: %d\n", spo2, respiration_rate, heart_rate);
@@ -424,6 +432,7 @@ PROCESS_THREAD(sensor_node,ev,data){
         }
     PROCESS_END();
 }
+
 
 
 
