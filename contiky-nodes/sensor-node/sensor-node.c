@@ -35,6 +35,7 @@ typedef struct{
     int hr;
     int rr;
     int spo2;
+    int interval_sec;
 }vital_data_t;
 
 // Global variables
@@ -52,6 +53,9 @@ static int spo2=95;
 static int respiration_rate=20;
 static int heart_rate=70;
 static bool panic_mode=false;
+static bool transfer_in_progress = false;
+static int transfer_buffer_count = 0;
+static int transfer_tail = 0;
 //static bool edge_ai_test_mode=false;
 typedef enum{
     PATIENT_STABLE,
@@ -82,13 +86,21 @@ static void ping_chunk_handler(coap_message_t *response){
         if(!network_connected){
             network_connected=true;
             ping_interval=CLOCK_SECOND*10;
-            coap_notify_observers(&vital_signs_resource);
+            if(!transfer_in_progress) {
+                coap_notify_observers(&vital_signs_resource);
+            }           
             LOG_INFO("[NETWORK]server reachable emptying buffer \n");
         }
     }
 }
 
 static void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset){
+    last_heartbeat_time = clock_time();
+    if(!network_connected) {
+        network_connected = true;
+        ping_interval = CLOCK_SECOND * 10;
+        LOG_INFO("[NETWORK] Client rilevato tramite GET, rete ripristinata\n");
+    }
     if(!ping_started) {
         uint32_t observe = 0;
         if(coap_get_header_observe(request, &observe) && observe == 0) {
@@ -98,8 +110,22 @@ static void res_get_handler(coap_message_t *request, coap_message_t *response, u
             LOG_INFO("[NETWORK] observer connected, started ping\n");
         }
     }
+    if (*offset == 0) {
+        transfer_in_progress = true;
+        if(buffer_count == 0){
+            data_buffer[0].hr = heart_rate;
+            data_buffer[0].rr = respiration_rate;
+            data_buffer[0].spo2 = spo2;
+            data_buffer[0].interval_sec = interval / CLOCK_SECOND;
+            buffer_count = 1;
+            head = 1;
+            tail = 0;
+        }
+        transfer_buffer_count = buffer_count;
+        transfer_tail = tail;
+    }
     cbor_writer_state_t state;
-    static uint8_t full_payload[350];
+    static uint8_t full_payload[1024];
     
     cbor_init_writer(&state, full_payload, sizeof(full_payload));
 /*
@@ -126,14 +152,8 @@ static void res_get_handler(coap_message_t *request, coap_message_t *response, u
         //array of vital signs
         cbor_write_text(&state, "e", strlen("e"));
         cbor_open_array(&state);
-        if(buffer_count==0){
-            data_buffer[0].hr=heart_rate;
-            data_buffer[0].rr=respiration_rate;
-            data_buffer[0].spo2=spo2;
-            buffer_count=1;
-        }
-        int current_idx=tail;
-        for(int i=0;i<buffer_count;i++){
+        int current_idx=transfer_tail;
+        for(int i=0;i<transfer_buffer_count;i++){
             //spo2
             cbor_open_map(&state);
                 cbor_write_text(&state, "n", strlen("n"));
@@ -161,6 +181,13 @@ static void res_get_handler(coap_message_t *request, coap_message_t *response, u
                 cbor_write_text(&state, "v", strlen("v"));
                 cbor_write_unsigned(&state, data_buffer[current_idx].hr);
             cbor_close_map(&state);
+            //interval
+            cbor_open_map(&state);
+                cbor_write_text(&state, "n", strlen("n"));
+                cbor_write_text(&state, "interval", strlen("interval"));
+                cbor_write_text(&state, "v", strlen("v"));
+                cbor_write_unsigned(&state, data_buffer[current_idx].interval_sec);
+            cbor_close_map(&state);
             current_idx=(current_idx+1)%MAX_BUFFERED_READINGS;
         }
         cbor_close_array(&state);
@@ -168,11 +195,13 @@ static void res_get_handler(coap_message_t *request, coap_message_t *response, u
 
     size_t full_len = cbor_end_writer(&state);
     if(*offset < 0) {
+        transfer_in_progress = false;
         return;
     }
 
     if(*offset >= full_len) {
         coap_set_status_code(response, BAD_OPTION_4_02);
+        transfer_in_progress = false;
         return;
     }
 
@@ -185,15 +214,20 @@ static void res_get_handler(coap_message_t *request, coap_message_t *response, u
     coap_set_header_content_format(response, APPLICATION_CBOR);
     coap_set_payload(response, buffer, send_len);
 
-    /* Avanza l'offset dell'ammontare di byte inviati */
+    
     *offset += send_len;
 
-    /* Se tutti i byte sono stati inviati, segnala la fine ponendo *offset = -1 */
     if(*offset >= full_len) {
         *offset = -1;
-        buffer_count = 0;
-        head = 0;
-        tail = 0;
+        
+        if(buffer_count >= transfer_buffer_count) {
+            buffer_count -= transfer_buffer_count;
+            tail = (tail + transfer_buffer_count) % MAX_BUFFERED_READINGS;
+        } else {
+            buffer_count = 0;
+            tail = head;
+        }
+        transfer_in_progress = false;
     }
 
     LOG_INFO("Block2 chunk sent (%zu bytes, total %zu bytes)\n", send_len, full_len);
@@ -256,6 +290,12 @@ static void enter_panic_mode(void){
     LOG_INFO("Panic mode activated\n");
 }
 static void res_put_handler(coap_message_t *request, coap_message_t *response,uint8_t *buffer, uint16_t preferred_size, int32_t *offset){
+  last_heartbeat_time = clock_time();
+    if(!network_connected) {
+        network_connected = true;
+        ping_interval = CLOCK_SECOND * 10;
+        LOG_INFO("[NETWORK] Client rilevato tramite PUT, rete ripristinata\n");
+    }
   const uint8_t *payload=NULL;
   int len=coap_get_payload(request, &payload);
   if(len>0){
@@ -330,31 +370,29 @@ static void res_event_handler(void){
     if (run_inference(heart_rate,respiration_rate,spo2) && !panic_mode){
         enter_panic_mode();
     }
+    data_buffer[head].hr = heart_rate;
+    data_buffer[head].rr = respiration_rate;
+    data_buffer[head].spo2 = spo2;
+    data_buffer[head].interval_sec = interval / CLOCK_SECOND;
+    head = (head + 1) % MAX_BUFFERED_READINGS;
+    if(buffer_count < MAX_BUFFERED_READINGS){
+        buffer_count++;
+    }
+    else{
+        tail = (tail + 1) % MAX_BUFFERED_READINGS;
+    }
     if(network_connected){
-        data_buffer[0].hr = heart_rate;
-        data_buffer[0].rr = respiration_rate;
-        data_buffer[0].spo2 = spo2;
-        
-        buffer_count = 1;
-        head = 1;
-        tail = 0;
-        
-        coap_notify_observers(&vital_signs_resource);
+        // Ritarda la notifica se è in corso un download a chunk
+        if(!transfer_in_progress) {
+            coap_notify_observers(&vital_signs_resource);
+        } else {
+            LOG_INFO("[NETWORK] Trasferimento in corso, accodo il dato nel buffer\n");
+        }
     }
     else {
-        data_buffer[head].hr = heart_rate;
-        data_buffer[head].rr = respiration_rate;
-        data_buffer[head].spo2 = spo2;
-        
-        head = (head+1)%MAX_BUFFERED_READINGS;
-        if(buffer_count < MAX_BUFFERED_READINGS){
-            buffer_count++;
-        }
-        else{
-            tail = (tail+1)%MAX_BUFFERED_READINGS;
-        }
-        LOG_INFO("[NETWORK]server unreachable, buffering data\n");
+        LOG_INFO("[NETWORK] Server irraggiungibile, buffering data...\n");
     }
+
     LOG_INFO("spo2: %d, Respiration Rate: %d, Heart Rate: %d\n", spo2, respiration_rate, heart_rate);
 }
 EVENT_RESOURCE(vital_signs_resource,
@@ -453,6 +491,7 @@ PROCESS_THREAD(sensor_node,ev,data){
         }
     PROCESS_END();
 }
+
 
 
 

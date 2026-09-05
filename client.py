@@ -171,10 +171,11 @@ async def write_to_influx(write_api, bucket, org, patient_name, cbor_data, recep
         sensor_bn = str(cbor_data.get('bn', 'unknown'))
         interval=int(cbor_data.get('int', 30))
         total_readings=len(vitals_list)
-        
-        for idx, (hr, rr, spo2) in enumerate(vitals_list):
-            seconds_elapsed=(total_readings-1-idx)*interval;
-            historical_time = reception_time-timedelta(seconds=seconds_elapsed);
+        historical_time = reception_time
+        points = []
+        for i in range(len(vitals_list) - 1, -1, -1):
+            hr, rr, spo2, interval_sec = vitals_list[i]
+
             point = Point("patient_vitals") \
                 .tag("patient_name", patient_name) \
                 .tag("sensor_bn", sensor_bn) \
@@ -182,8 +183,15 @@ async def write_to_influx(write_api, bucket, org, patient_name, cbor_data, recep
                 .field("heart_rate", int(hr)) \
                 .field("respiration_rate", int(rr)) \
                 .field("spo2", int(spo2))  
-            await write_api.write(bucket=bucket, org=org, record=point)
-            
+            points.append(point)
+
+            if i > 0:
+                prev_interval = vitals_list[i-1][3]
+                historical_time -= timedelta(seconds=prev_interval)
+
+        # Scriviamo su InfluxDB ripristinando l'ordine cronologico (opzionale ma pulito)
+        for point in reversed(points):
+            await write_api.write(bucket=bucket, org=org, record=point)            
     except Exception as e:
         print(f"[INFLUXDB ERROR] Failed to write data for {patient_name}: {e}")
 
@@ -200,8 +208,10 @@ def extract_vitals(cbor_data):
             current["rr"] = value
         elif name == "spo2":
             current["spo2"] = value
-        if {"hr", "rr", "spo2"} <= current.keys():
-            readings.append((current["hr"], current["rr"], current["spo2"]))
+        elif name == "interval":
+            current["interval"] = value
+        if {"hr", "rr", "spo2","interval"} <= current.keys():
+            readings.append((current["hr"], current["rr"], current["spo2"], current["interval"]))
             current = {}
     return readings
        
@@ -233,7 +243,7 @@ async def observe_sensor(protocol, app_name, sensor_id, patient_name, ipv6, writ
         readings=extract_vitals(cbor_data)
         if len(readings) > 1:
             print(f"[BUFFER] Packet with {len(readings)} buffered readings received from {patient_name}")
-        for hr, rr, spo2 in readings:
+        for hr, rr, spo2, interval in readings:
             decision = await evaluate_and_act(protocol, state, sensor_id, hr, rr, spo2,write_api, decision_bucket, influx_org,actuator_ipv6,ipv6)        
             print(f"[DECISION] {patient_name}: {decision}")
     try:
@@ -316,6 +326,7 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
 
 
