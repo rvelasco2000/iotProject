@@ -56,6 +56,29 @@ class PatientState:
         
 patient_states: dict[str, PatientState] = {}
 
+async def hydrate_patient_state(query_api, bucket, org, patient_name, state):
+    query = f"""
+    from(bucket: "{bucket}")
+      |> range(start: -75s)
+      |> filter(fn: (r) => r["_measurement"] == "patient_vitals")
+      |> filter(fn: (r) => r["patient_name"] == "{patient_name}")
+      |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
+      |> sort(columns: ["_time"], desc: false)
+      |> tail(n: {WINDOW_SIZE})
+    """
+    try:
+        tables = await query_api.query(query, org=org)
+        for table in tables:
+            for record in table.records:
+                hr = record.values.get("heart_rate")
+                rr = record.values.get("respiration_rate")
+                spo2 = record.values.get("spo2")
+                if None not in (hr, rr, spo2):
+                    state.add_reading(hr, rr, spo2)
+        print(f"[HYDRATION] Pre-loaded {len(state.window)} historical readings for {patient_name}")
+    except Exception as e:
+        print(f"[HYDRATION ERROR] Failed to fetch data for {patient_name}: {e}")
+
 async def send_coap_command(protocol,patient_name,remote_ipv6,resource,state_val):
     if(not remote_ipv6):
         print("[REMOTE ERROR] no ipv6 configured for this device")
@@ -182,10 +205,14 @@ def extract_vitals(cbor_data):
             current = {}
     return readings
        
-async def observe_sensor(protocol, app_name, sensor_id, patient_name, ipv6, write_api, influx_bucket, influx_org,decision_bucket,actuator_ipv6=None):
+async def observe_sensor(protocol, app_name, sensor_id, patient_name, ipv6, write_api,read_api,influx_bucket, influx_org,decision_bucket,actuator_ipv6=None):
     resource_path = "vital_signs"
     uri = f"coap://[{ipv6}]/{resource_path}"
     state=patient_states.setdefault(patient_name, PatientState(patient_name))
+    try:
+        await asyncio.wait_for(hydrate_patient_state(read_api, influx_bucket, influx_org, patient_name, state), timeout=3.0)
+    except asyncio.TimeoutError:
+        print(f"[HYDRATION WARNING] Timeout while fetching data for {patient_name}")
     request = Message(code=GET, uri=uri, observe=0)
     pr = protocol.request(request)
 
@@ -243,6 +270,7 @@ async def main():
         org=influx_cfg.get("org")
     )
     write_api = influx_client.write_api()
+    read_api = influx_client.query_api()
     decisions_bucket=influx_cfg.get("decision_bucket")
 
     print(f"Starting '{app_name}' monitoring system...")
@@ -268,6 +296,7 @@ async def main():
                     patient_name,
                     sensor.get("ipv6"),
                     write_api,
+                    read_api,
                     influx_cfg.get("bucket"),
                     influx_cfg.get("org"),
                     decisions_bucket,
@@ -283,6 +312,7 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
 
 

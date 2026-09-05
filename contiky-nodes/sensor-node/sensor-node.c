@@ -44,7 +44,7 @@ static int buffer_count=0;
 static int head=0;
 static int tail=0;
 static bool network_connected=true;
-static clock_time_t ping_interval=CLOCK_SECOND*30;
+static clock_time_t ping_interval=CLOCK_SECOND*10;
 static clock_time_t interval=CLOCK_SECOND*30;
 static struct etimer blink_et;
 static int spo2=95;
@@ -76,7 +76,7 @@ static void ping_chunk_handler(coap_message_t *response){
     else{
         if(!network_connected){
             network_connected=true;
-            ping_interval=CLOCK_SECOND*30;
+            ping_interval=CLOCK_SECOND*5;
             coap_notify_observers(&vital_signs_resource);
             LOG_INFO("[NETWORK]server reachable emptying buffer \n");
         }
@@ -93,8 +93,9 @@ static void res_get_handler(coap_message_t *request, coap_message_t *response, u
         }
     }
     cbor_writer_state_t state;
+    static uint8_t full_payload[350];
     
-    cbor_init_writer(&state, buffer, preferred_size);
+    cbor_init_writer(&state, full_payload, sizeof(full_payload));
 /*
     cbor_open_map(&state);
         cbor_write_text(&state, "s", 1);
@@ -156,16 +157,41 @@ static void res_get_handler(coap_message_t *request, coap_message_t *response, u
             cbor_close_map(&state);
             current_idx=(current_idx+1)%MAX_BUFFERED_READINGS;
         }
-        buffer_count=0;
-        head=0;
-        tail=0;
         cbor_close_array(&state);
     cbor_close_map(&state);
 
-    size_t len = cbor_end_writer(&state);
+    size_t full_len = cbor_end_writer(&state);
+    if(*offset < 0) {
+        return;
+    }
+
+    if(*offset >= full_len) {
+        coap_set_status_code(response, BAD_OPTION_4_02);
+        return;
+    }
+
+    size_t send_len = full_len - *offset;
+    if(send_len > preferred_size) {
+        send_len = preferred_size;
+    }
+
+    memcpy(buffer, full_payload + *offset, send_len);
     coap_set_header_content_format(response, APPLICATION_CBOR);
-    coap_set_payload(response, buffer, len);
-    LOG_INFO("i have send:spo2: %d, Respiration Rate: %d, Heart Rate: %d sended in %zu byte\n", spo2, respiration_rate, heart_rate,len);
+    coap_set_payload(response, buffer, send_len);
+
+    /* Avanza l'offset dell'ammontare di byte inviati */
+    *offset += send_len;
+
+    /* Se tutti i byte sono stati inviati, segnala la fine ponendo *offset = -1 */
+    if(*offset >= full_len) {
+        *offset = -1;
+        buffer_count = 0;
+        head = 0;
+        tail = 0;
+    }
+
+    LOG_INFO("Block2 chunk sent (%zu bytes, total %zu bytes)\n", send_len, full_len);
+    LOG_INFO("i have send:spo2: %d, Respiration Rate: %d, Heart Rate: %d sended in %zu byte\n", spo2, respiration_rate, heart_rate,full_len);
 
 } 
 //funtion to clamp the random values generated to a specific range to avoid data too high that the model never saw
@@ -298,21 +324,29 @@ static void res_event_handler(void){
     if (run_inference(heart_rate,respiration_rate,spo2) && !panic_mode){
         enter_panic_mode();
     }
-    data_buffer[head].hr=heart_rate;
-    data_buffer[head].rr=respiration_rate;
-    data_buffer[head].spo2=spo2;
-    head = (head+1)%MAX_BUFFERED_READINGS;
-    if(buffer_count<MAX_BUFFERED_READINGS){
-        buffer_count++;
-    }
-    else{
-        tail=(tail+1)%MAX_BUFFERED_READINGS;
-    }
     if(network_connected){
+        data_buffer[0].hr = heart_rate;
+        data_buffer[0].rr = respiration_rate;
+        data_buffer[0].spo2 = spo2;
+        
+        buffer_count = 1;
+        head = 1;
+        tail = 0;
+        
         coap_notify_observers(&vital_signs_resource);
-
     }
-    else{
+    else {
+        data_buffer[head].hr = heart_rate;
+        data_buffer[head].rr = respiration_rate;
+        data_buffer[head].spo2 = spo2;
+        
+        head = (head+1)%MAX_BUFFERED_READINGS;
+        if(buffer_count < MAX_BUFFERED_READINGS){
+            buffer_count++;
+        }
+        else{
+            tail = (tail+1)%MAX_BUFFERED_READINGS;
+        }
         LOG_INFO("[NETWORK]server unreachable, buffering data\n");
     }
     LOG_INFO("spo2: %d, Respiration Rate: %d, Heart Rate: %d\n", spo2, respiration_rate, heart_rate);
@@ -332,14 +366,15 @@ PROCESS_THREAD(ping_client_process, ev, data) {
 
   PROCESS_BEGIN();
   coap_endpoint_parse(PYTHON_APP_URI, strlen(PYTHON_APP_URI), &server_ep);
-  etimer_set(&ping_timer, ping_interval);
+  //etimer_set(&ping_timer, ping_interval);
   while(1) {
-    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&ping_timer));
+    //PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&ping_timer));
     coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
     coap_set_header_uri_path(request, "ping");
     coap_set_payload(request, (uint8_t *)SENSOR_NAME, strlen(SENSOR_NAME));
     COAP_BLOCKING_REQUEST(&server_ep, request, ping_chunk_handler);
     etimer_set(&ping_timer, ping_interval);
+    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&ping_timer));
   }
   PROCESS_END();
 }
@@ -397,9 +432,3 @@ PROCESS_THREAD(sensor_node,ev,data){
         }
     PROCESS_END();
 }
-
-
-
-
-
-
