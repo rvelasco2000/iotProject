@@ -41,6 +41,7 @@ typedef struct{
 // Global variables
 static bool ping_started=false;
 static process_event_t event_start_ping;
+static process_event_t event_network_restored;
 static vital_data_t data_buffer[MAX_BUFFERED_READINGS];
 static int buffer_count=0;
 static int head=0;
@@ -76,9 +77,17 @@ static clock_time_t last_release_time=0;
 static void ping_chunk_handler(coap_message_t *response){
     if(response==NULL){
         if(network_connected){
-            network_connected=false;
-            ping_interval=CLOCK_SECOND*5;
-            LOG_INFO("[NETWORK]no answer from heartbeat server unreachable or timeout \n");
+            if(transfer_in_progress){
+                /* Non interrompere un trasferimento Block2 in corso:
+                   la ping e' fallita ma il client sta ancora ricevendo chunk.
+                   Il watchdog si occupera' di dichiarare la rete down
+                   quando last_heartbeat_time sara' abbastanza vecchio. */
+                LOG_INFO("[NETWORK] Ping failed but Block2 transfer in progress, deferring to watchdog\n");
+            } else {
+                network_connected=false;
+                ping_interval=CLOCK_SECOND*5;
+                LOG_INFO("[NETWORK] No answer from heartbeat, server unreachable or timeout\n");
+            }
         }
     }
     else{
@@ -86,7 +95,10 @@ static void ping_chunk_handler(coap_message_t *response){
         if(!network_connected){
             network_connected=true;
             ping_interval=CLOCK_SECOND*10;
-            LOG_INFO("[NETWORK] Server reachable again, waiting for GET or next cycle\n");
+            LOG_INFO("[NETWORK] Server reachable again via ping, flushing buffered data\n");
+            /* Delega la notify al processo principale: sicuro rispetto a chiamarla
+               direttamente da dentro COAP_BLOCKING_REQUEST */
+            process_post(&sensor_node, event_network_restored, NULL);
         }
     }
 }
@@ -96,7 +108,13 @@ static void res_get_handler(coap_message_t *request, coap_message_t *response, u
     if(!network_connected) {
         network_connected = true;
         ping_interval = CLOCK_SECOND * 10;
-        LOG_INFO("[NETWORK] Client seen by GET, network restored\n");
+        /* I dati bufferizzati vengono mandati direttamente come risposta
+           a questo GET nelle righe successive, nessuna notify extra necessaria */
+        if(buffer_count > 0) {
+            LOG_INFO("[NETWORK] Client seen by GET, network restored, sending %d buffered readings\n", buffer_count);
+        } else {
+            LOG_INFO("[NETWORK] Client seen by GET, network restored\n");
+        }
     }
     if(!ping_started) {
         uint32_t observe = 0;
@@ -407,11 +425,22 @@ PROCESS_THREAD(ping_client_process, ev, data) {
 
   PROCESS_BEGIN();
   coap_endpoint_parse(PYTHON_APP_URI, strlen(PYTHON_APP_URI), &server_ep);
-  etimer_set(&ping_timer, CLOCK_SECOND * 2);
-  PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&ping_timer));
-  //etimer_set(&ping_timer, ping_interval);
+  /* Aspetta che il Block2 della prima risposta GET sia completato prima
+     di eseguire la prima COAP_BLOCKING_REQUEST, che bloccherebbe Contiki.
+     Polling su transfer_in_progress ogni 500ms. */
+  etimer_set(&ping_timer, CLOCK_SECOND / 2);
+  do {
+    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&ping_timer));
+    etimer_reset(&ping_timer);
+  } while(transfer_in_progress);
   while(1) {
-    //PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&ping_timer));
+    /* Aspetta fine di eventuale Block2 in corso prima di bloccare il processo.
+       Rende il check transfer_in_progress nel ping_chunk_handler ridondante
+       ma lo manteniamo come difesa in profondita'. */
+    while(transfer_in_progress) {
+      etimer_set(&ping_timer, CLOCK_SECOND / 2);
+      PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&ping_timer));
+    }
     coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
     coap_set_header_uri_path(request, "ping");
     coap_set_payload(request, (uint8_t *)SENSOR_NAME, strlen(SENSOR_NAME));
@@ -428,6 +457,7 @@ PROCESS_THREAD(sensor_node,ev,data){
         static struct etimer et;
         PROCESS_BEGIN();
         event_start_ping = process_alloc_event();
+        event_network_restored = process_alloc_event();
         printf("%p\n",eml_error_str);
         printf("%p\n",eml_net_activation_function_strs);
         coap_activate_resource(&vital_signs_resource, "vital_signs");
@@ -485,6 +515,18 @@ PROCESS_THREAD(sensor_node,ev,data){
             else if(ev == event_start_ping) {
                 process_start(&ping_client_process, NULL);
                 LOG_INFO("[NETWORK] Ping process started safely outside CoAP handler\n");
+            }
+            else if(ev == event_network_restored) {
+                if(!transfer_in_progress) {
+                    if(buffer_count > 0) {
+                        LOG_INFO("[NETWORK] Flushing %d buffered readings after reconnect\n", buffer_count);
+                    } else {
+                        LOG_INFO("[NETWORK] Network restored, no buffered data, sending current reading\n");
+                    }
+                    coap_notify_observers(&vital_signs_resource);
+                } else {
+                    LOG_INFO("[NETWORK] Network restored but transfer already in progress, skipping flush\n");
+                }
             }
             
         }
