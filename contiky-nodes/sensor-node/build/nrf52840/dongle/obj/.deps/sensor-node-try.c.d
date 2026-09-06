@@ -1,4 +1,4 @@
-build/nrf52840/dongle/obj/sensor-node.o: sensor-node.c \
+build/nrf52840/dongle/obj/sensor-node-try.o: sensor-node-try.c \
  /home/riccardo/contiki-ng/os/net/app-layer/coap/module-macros.h \
  /home/riccardo/contiki-ng/os/contiki.h \
  /home/riccardo/contiki-ng/arch/platform/nrf52840/./contiki-conf.h \
