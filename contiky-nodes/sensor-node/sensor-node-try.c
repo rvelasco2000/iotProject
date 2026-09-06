@@ -492,4 +492,3 @@ PROCESS_THREAD(sensor_node, ev, data) {
     }
     PROCESS_END();
 }
-
