@@ -86,10 +86,7 @@ static void ping_chunk_handler(coap_message_t *response){
         if(!network_connected){
             network_connected=true;
             ping_interval=CLOCK_SECOND*10;
-            if(!transfer_in_progress) {
-                coap_notify_observers(&vital_signs_resource);
-            }           
-            LOG_INFO("[NETWORK]server reachable emptying buffer \n");
+            LOG_INFO("[NETWORK] Server reachable again, waiting for GET or next cycle\n");
         }
     }
 }
@@ -99,7 +96,7 @@ static void res_get_handler(coap_message_t *request, coap_message_t *response, u
     if(!network_connected) {
         network_connected = true;
         ping_interval = CLOCK_SECOND * 10;
-        LOG_INFO("[NETWORK] Client rilevato tramite GET, rete ripristinata\n");
+        LOG_INFO("[NETWORK] Client seen by GET, network restored\n");
     }
     if(!ping_started) {
         uint32_t observe = 0;
@@ -294,7 +291,7 @@ static void res_put_handler(coap_message_t *request, coap_message_t *response,ui
     if(!network_connected) {
         network_connected = true;
         ping_interval = CLOCK_SECOND * 10;
-        LOG_INFO("[NETWORK] Client rilevato tramite PUT, rete ripristinata\n");
+        LOG_INFO("[NETWORK] Client seen by PUT, network restored\n");
     }
   const uint8_t *payload=NULL;
   int len=coap_get_payload(request, &payload);
@@ -382,15 +379,15 @@ static void res_event_handler(void){
         tail = (tail + 1) % MAX_BUFFERED_READINGS;
     }
     if(network_connected){
-        // Ritarda la notifica se è in corso un download a chunk
+       
         if(!transfer_in_progress) {
             coap_notify_observers(&vital_signs_resource);
         } else {
-            LOG_INFO("[NETWORK] Trasferimento in corso, accodo il dato nel buffer\n");
+            LOG_INFO("[NETWORK] transfer in progress, queuing data\n");
         }
     }
     else {
-        LOG_INFO("[NETWORK] Server irraggiungibile, buffering data...\n");
+        LOG_INFO("[NETWORK] Server unreachable, buffering data...\n");
     }
 
     LOG_INFO("spo2: %d, Respiration Rate: %d, Heart Rate: %d\n", spo2, respiration_rate, heart_rate);
@@ -410,6 +407,8 @@ PROCESS_THREAD(ping_client_process, ev, data) {
 
   PROCESS_BEGIN();
   coap_endpoint_parse(PYTHON_APP_URI, strlen(PYTHON_APP_URI), &server_ep);
+  etimer_set(&ping_timer, CLOCK_SECOND * 2);
+  PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&ping_timer));
   //etimer_set(&ping_timer, ping_interval);
   while(1) {
     //PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&ping_timer));
