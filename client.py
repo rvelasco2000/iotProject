@@ -1,4 +1,5 @@
 import asyncio
+import signal
 from aiocoap import *
 from aiocoap import resource
 import aiocoap.error
@@ -253,51 +254,66 @@ async def observe_sensor(protocol, app_name, sensor_id, patient_name, ipv6, writ
             print(f"[DECISION] {patient_name}: {decision}")
 
     retry_delay = 5
-    while True:
-        pr = None
-        try:
-            print(f"[OBSERVE] Connecting to {patient_name} ({ipv6})...")
-            request = Message(code=GET, uri=uri, observe=0)
-            pr = protocol.request(request)
-
-            first_response = await asyncio.wait_for(pr.response, timeout=60.0)
-
-            if not first_response.code.is_successful():
-                print(f"[ERROR] {patient_name} (Node {sensor_id}) replied with: {first_response.code}, retrying in {retry_delay}s...")
-                pr.observation.cancel()
-                await asyncio.sleep(retry_delay)
-                continue
-
-            print(f"[OBSERVE] Observation active for {patient_name}, waiting for notifications...")
-            await handle_packet(first_response.payload, "FIRST RESPONSE")
-
-            # Instant watchdog for broken block-wise transfers
+    current_pr = None
+    try:
+        while True:
+            pr = None
             try:
-                async for packet in pr.observation:
-                    await handle_packet(packet.payload, "NOTIFICATION")
-            except (aiocoap.error.RequestTimedOut, aiocoap.error.NetworkError, asyncio.TimeoutError) as e:
-                print(f"[WATCHDOG] Transfer broken by network blip for {patient_name}: {e}. Reconnecting immediately...")
+                print(f"[OBSERVE] Connecting to {patient_name} ({ipv6})...")
+                request = Message(code=GET, uri=uri, observe=0)
+                pr = protocol.request(request)
+                current_pr = pr
+
+                first_response = await asyncio.wait_for(pr.response, timeout=60.0)
+
+                if not first_response.code.is_successful():
+                    print(f"[ERROR] {patient_name} (Node {sensor_id}) replied with: {first_response.code}, retrying in {retry_delay}s...")
+                    pr.observation.cancel()
+                    await asyncio.sleep(retry_delay)
+                    continue
+
+                print(f"[OBSERVE] Observation active for {patient_name}, waiting for notifications...")
+                await handle_packet(first_response.payload, "FIRST RESPONSE")
+
+                # Instant watchdog for broken block-wise transfers
+                try:
+                    async for packet in pr.observation:
+                        await handle_packet(packet.payload, "NOTIFICATION")
+                except (aiocoap.error.RequestTimedOut, aiocoap.error.NetworkError, asyncio.TimeoutError) as e:
+                    print(f"[WATCHDOG] Transfer broken by network blip for {patient_name}: {e}. Reconnecting immediately...")
+                    if pr is not None:
+                        pr.observation.cancel()
+                    await asyncio.sleep(1) # Brief stabilization pause
+                    continue
+
+                print(f"[OBSERVE] Observation ended for {patient_name}, reconnecting in {retry_delay}s...")
+                await asyncio.sleep(retry_delay)
+
+            except asyncio.TimeoutError:
+                print(f"[OBSERVE] Timeout connecting to {patient_name} ({ipv6}), retrying in {retry_delay}s...")
                 if pr is not None:
                     pr.observation.cancel()
-                await asyncio.sleep(1) # Brief stabilization pause
-                continue
-
-            print(f"[OBSERVE] Observation ended for {patient_name}, reconnecting in {retry_delay}s...")
-            await asyncio.sleep(retry_delay)
-
-        except asyncio.TimeoutError:
-            print(f"[OBSERVE] Timeout connecting to {patient_name} ({ipv6}), retrying in {retry_delay}s...")
-            if pr is not None:
-                pr.observation.cancel()
-            await asyncio.sleep(retry_delay)
-        except Exception as e:
-            print(f"[OBSERVE] Error for {patient_name} ({ipv6}): {e}, retrying in {retry_delay}s...")
-            if pr is not None:
-                try:
-                    pr.observation.cancel()
-                except Exception:
-                    pass
-            await asyncio.sleep(retry_delay)
+                await asyncio.sleep(retry_delay)
+            except Exception as e:
+                print(f"[OBSERVE] Error for {patient_name} ({ipv6}): {e}, retrying in {retry_delay}s...")
+                if pr is not None:
+                    try:
+                        pr.observation.cancel()
+                    except Exception:
+                        pass
+                await asyncio.sleep(retry_delay)
+    except asyncio.CancelledError:
+        # Clean shutdown (e.g. Ctrl+C handled in main()): explicitly cancel
+        # the observation so aiocoap sends a deregistration to the sensor
+        # instead of just disappearing and leaving a stale observer
+        # registered on the node for the next reconnect to collide with.
+        if current_pr is not None:
+            try:
+                current_pr.observation.cancel()
+                print(f"[SHUTDOWN] Deregistered observation for {patient_name}")
+            except Exception:
+                pass
+        raise
 
 class PingResource(resource.Resource):
     async def render_post(self, request):
@@ -360,8 +376,26 @@ async def main():
         if not tasks:
             print("No valid sensor nodes to monitor.")
             return
-        await asyncio.gather(*tasks)
-        
+
+        gather_task = asyncio.gather(*(asyncio.ensure_future(t) for t in tasks))
+        loop = asyncio.get_running_loop()
+
+        def _handle_sigint():
+            print("\n[SHUTDOWN] Ctrl+C received, deregistering observers and exiting...")
+            gather_task.cancel()
+
+        try:
+            loop.add_signal_handler(signal.SIGINT, _handle_sigint)
+        except NotImplementedError:
+            # e.g. platforms without add_signal_handler support (Windows);
+            # Ctrl+C will fall back to the default abrupt KeyboardInterrupt.
+            pass
+
+        try:
+            await gather_task
+        except asyncio.CancelledError:
+            pass
+
     finally:
         await influx_client.close()
 

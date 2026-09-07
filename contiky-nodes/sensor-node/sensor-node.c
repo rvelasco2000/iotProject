@@ -134,10 +134,14 @@ static void res_get_handler(coap_message_t *request, coap_message_t *response, u
     static uint8_t full_payload[1024];
 
     if (*offset == 0) {
-        if (request != NULL) {
-            transfer_in_progress = true;
-        }
-        
+        // Marks a transfer as busy regardless of whether this block was
+        // triggered by a real client GET or by an internal push notification
+        // (request == NULL). Notifications are still real transfers: gating
+        // this on request != NULL let a periodic re-trigger rebuild
+        // full_payload/full_len out from under an in-flight notification
+        // that was still waiting on the client's Block2 continuation.
+        transfer_in_progress = true;
+
         if(buffer_count == 0) {
             add_to_buffer(heart_rate, respiration_rate, spo2, interval / CLOCK_SECOND);
         }
@@ -205,13 +209,13 @@ static void res_get_handler(coap_message_t *request, coap_message_t *response, u
     }
 
     if(*offset < 0) {
-        if (request != NULL) transfer_in_progress = false;
+        transfer_in_progress = false;
         return;
     }
 
     if(*offset >= full_len) {
         coap_set_status_code(response, BAD_OPTION_4_02);
-        if (request != NULL) transfer_in_progress = false;
+        transfer_in_progress = false;
         return;
     }
 
@@ -228,16 +232,14 @@ static void res_get_handler(coap_message_t *request, coap_message_t *response, u
 
     if(*offset >= full_len) {
         *offset = -1;
-        if (request != NULL) {
-            if(buffer_count >= transfer_buffer_count) {
-                buffer_count -= transfer_buffer_count;
-                tail = (tail + transfer_buffer_count) % MAX_BUFFERED_READINGS;
-            } else {
-                buffer_count = 0;
-                tail = head;
-            }
-            transfer_in_progress = false;
+        if(buffer_count >= transfer_buffer_count) {
+            buffer_count -= transfer_buffer_count;
+            tail = (tail + transfer_buffer_count) % MAX_BUFFERED_READINGS;
+        } else {
+            buffer_count = 0;
+            tail = head;
         }
+        transfer_in_progress = false;
     }
 
     if (request != NULL) {
