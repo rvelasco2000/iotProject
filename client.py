@@ -1,12 +1,15 @@
+#last version
 import asyncio
+import signal
 from aiocoap import *
 from aiocoap import resource
+import aiocoap.error
 import cbor2
 import json
 import os
 from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
-from datetime import datetime,timedelta
+from datetime import datetime, timedelta
 from collections import deque
 
 from influxdb_client import Point
@@ -21,6 +24,11 @@ SPO2_CRITICAL=92
 SPO2_DANGER=85
 WINDOW_SIZE=5
 CONFIRM_COUNT=4
+
+
+IDLE_TIMEOUT_MULTIPLIER = 3
+IDLE_TIMEOUT_MIN = 10       
+IDLE_TIMEOUT_DEFAULT = 30    
 
 class PatientState:
     def __init__(self, patient_name):
@@ -165,11 +173,17 @@ def load_configuration(filename="config.json"):
     with open(filename, "r") as f:
         return json.load(f)
 
-async def write_to_influx(write_api, bucket, org, patient_name, cbor_data, reception_time):
+async def write_to_influx(write_api, bucket, org, patient_name, cbor_data, reception_time,payload_size):
     try:
         vitals_list = extract_vitals(cbor_data)
         sensor_bn = str(cbor_data.get('bn', 'unknown'))
-        interval=int(cbor_data.get('int', 30))
+        size_point = Point("network_metrics") \
+            .tag("patient_name", patient_name) \
+            .tag("sensor_bn", sensor_bn) \
+            .time(reception_time) \
+            .field("payload_size_bytes", payload_size)
+        await write_api.write(bucket="payload", org=org, record=size_point)
+        interval=int(cbor_data.get('interval', 30))
         total_readings=len(vitals_list)
         historical_time = reception_time
         points = []
@@ -189,7 +203,6 @@ async def write_to_influx(write_api, bucket, org, patient_name, cbor_data, recep
                 prev_interval = vitals_list[i-1][3]
                 historical_time -= timedelta(seconds=prev_interval)
 
-        # Scriviamo su InfluxDB ripristinando l'ordine cronologico (opzionale ma pulito)
         for point in reversed(points):
             await write_api.write(bucket=bucket, org=org, record=point)            
     except Exception as e:
@@ -215,53 +228,124 @@ def extract_vitals(cbor_data):
             current = {}
     return readings
        
-async def observe_sensor(protocol, app_name, sensor_id, patient_name, ipv6, write_api,read_api,influx_bucket, influx_org,decision_bucket,actuator_ipv6=None):
+async def observe_sensor(protocol, app_name, sensor_id, patient_name, ipv6, write_api, read_api, influx_bucket, influx_org, decision_bucket, actuator_ipv6=None):
     resource_path = "vital_signs"
     uri = f"coap://[{ipv6}]/{resource_path}"
-    state=patient_states.setdefault(patient_name, PatientState(patient_name))
+    state = patient_states.setdefault(patient_name, PatientState(patient_name))
+    last_known_interval = IDLE_TIMEOUT_DEFAULT
+
     try:
-        await asyncio.wait_for(hydrate_patient_state(read_api, influx_bucket, influx_org, patient_name, state), timeout=3.0)
+        await asyncio.wait_for(
+            hydrate_patient_state(read_api, influx_bucket, influx_org, patient_name, state),
+            timeout=3.0
+        )
     except asyncio.TimeoutError:
         print(f"[HYDRATION WARNING] Timeout while fetching data for {patient_name}")
-    request = Message(code=GET, uri=uri, observe=0)
-    pr = protocol.request(request)
 
-    async def handle_packet(payload,label):
-        if (len(payload)==0):
+    async def handle_packet(payload, label):
+        nonlocal last_known_interval
+        if len(payload) == 0:
             return
         timezone_italy = ZoneInfo("Europe/Rome")
         reception_time = datetime.now(timezone_italy)
         try:
-            cbor_data=cbor2.loads(payload)
+            cbor_data = cbor2.loads(payload)
         except Exception as e:
-            print(f"[CBOR ERROR] Payload malformato da {patient_name} ignorato: {e}")
+            print(f"[CBOR ERROR] Payload malformed from {patient_name} ignored: {e}")
             return
+        last_known_interval = int(cbor_data.get('interval', last_known_interval))
         print(f"\n=== {label} [{app_name}] ===")
         print(f"Patient: {patient_name} (ID: {sensor_id}) | Received at: {reception_time}")
         print(f"Decoded CBOR: {json.dumps(cbor_data, indent=2)}")
-        await write_to_influx(write_api, influx_bucket, influx_org, patient_name, cbor_data, reception_time)
-        readings=extract_vitals(cbor_data)
+        await write_to_influx(write_api, influx_bucket, influx_org, patient_name, cbor_data, reception_time, len(payload))
+        readings = extract_vitals(cbor_data)
         if len(readings) > 1:
             print(f"[BUFFER] Packet with {len(readings)} buffered readings received from {patient_name}")
         for hr, rr, spo2, interval in readings:
-            decision = await evaluate_and_act(protocol, state, sensor_id, hr, rr, spo2,write_api, decision_bucket, influx_org,actuator_ipv6,ipv6)        
+            decision = await evaluate_and_act(
+                protocol, state, sensor_id, hr, rr, spo2,
+                write_api, decision_bucket, influx_org, actuator_ipv6, ipv6
+            )
             print(f"[DECISION] {patient_name}: {decision}")
-    try:
-        first_response = await pr.response
-        
-        if not first_response.code.is_successful():
-            print(f"[ERROR] {patient_name} (Node {sensor_id}) replied with CoAP Response: {first_response.code}")
-        else:
-            await handle_packet(first_response.payload,"FIRST RESPONSE")
 
-        async for packet in pr.observation:
-            await handle_packet(packet.payload,"NOTIFICATION")
-    except Exception as e:
-        print(f"[COMMUNICATION ERROR] Patient {patient_name} (Node {sensor_id}): {e}")
+    retry_delay = 5
+    current_pr = None
+    try:
+        while True:
+            pr = None
+            try:
+                print(f"[OBSERVE] Connecting to {patient_name} ({ipv6})...")
+                request = Message(code=GET, uri=uri, observe=0)
+                pr = protocol.request(request)
+                current_pr = pr
+
+                first_response = await asyncio.wait_for(pr.response, timeout=60.0)
+
+                if not first_response.code.is_successful():
+                    print(f"[ERROR] {patient_name} (Node {sensor_id}) replied with: {first_response.code}, retrying in {retry_delay}s...")
+                    pr.observation.cancel()
+                    await asyncio.sleep(retry_delay)
+                    continue
+
+                print(f"[OBSERVE] Observation active for {patient_name}, waiting for notifications...")
+                await handle_packet(first_response.payload, "FIRST RESPONSE")
+
+                observation_iter = pr.observation.__aiter__()
+                try:
+                    while True:
+                        idle_timeout = max(IDLE_TIMEOUT_MIN, last_known_interval * IDLE_TIMEOUT_MULTIPLIER)
+                        try:
+                            packet = await asyncio.wait_for(
+                                observation_iter.__anext__(),
+                                timeout=idle_timeout,
+                            )
+                        except StopAsyncIteration:
+                            break
+                        await handle_packet(packet.payload, "NOTIFICATION")
+                except asyncio.TimeoutError:
+                    print(f"[WATCHDOG] No notification from {patient_name} in {idle_timeout}s "
+                          f"(last known reporting interval: {last_known_interval}s) observer likely "
+                          f"dropped server-side after a network blip. Resubscribing...")
+                    if pr is not None:
+                        pr.observation.cancel()
+                    await asyncio.sleep(1) 
+                    continue
+                except (aiocoap.error.RequestTimedOut, aiocoap.error.NetworkError) as e:
+                    print(f"[WATCHDOG] Transfer broken by network blip for {patient_name}: {e}. Reconnecting immediately...")
+                    if pr is not None:
+                        pr.observation.cancel()
+                    await asyncio.sleep(1) 
+                    continue
+
+                print(f"[OBSERVE] Observation ended for {patient_name}, reconnecting in {retry_delay}s...")
+                await asyncio.sleep(retry_delay)
+
+            except asyncio.TimeoutError:
+                print(f"[OBSERVE] Timeout connecting to {patient_name} ({ipv6}), retrying in {retry_delay}s...")
+                if pr is not None:
+                    pr.observation.cancel()
+                await asyncio.sleep(retry_delay)
+            except Exception as e:
+                print(f"[OBSERVE] Error for {patient_name} ({ipv6}): {e}, retrying in {retry_delay}s...")
+                if pr is not None:
+                    try:
+                        pr.observation.cancel()
+                    except Exception:
+                        pass
+                await asyncio.sleep(retry_delay)
+    except asyncio.CancelledError:
+        if current_pr is not None:
+            try:
+                current_pr.observation.cancel()
+                print(f"[SHUTDOWN] Deregistered observation for {patient_name}")
+            except Exception:
+                pass
+        raise
 
 class PingResource(resource.Resource):
     async def render_post(self, request):
         return Message(code=CHANGED, payload=b"ACK")
+
 async def main():
     try:
         config = load_configuration()
@@ -319,17 +403,27 @@ async def main():
         if not tasks:
             print("No valid sensor nodes to monitor.")
             return
-        await asyncio.gather(*tasks)
-        
+
+        gather_task = asyncio.gather(*(asyncio.ensure_future(t) for t in tasks))
+        loop = asyncio.get_running_loop()
+
+        def _handle_sigint():
+            print("\n[SHUTDOWN] Ctrl+C received, deregistering observers and exiting...")
+            gather_task.cancel()
+
+        try:
+            loop.add_signal_handler(signal.SIGINT, _handle_sigint)
+        except NotImplementedError:
+            pass
+
+        try:
+            await gather_task
+        except asyncio.CancelledError:
+            pass
+
     finally:
         await influx_client.close()
 
 if __name__ == "__main__":
     asyncio.run(main())
-
-
-
-
-
-
 

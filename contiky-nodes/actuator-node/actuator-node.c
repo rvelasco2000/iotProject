@@ -1,9 +1,11 @@
+//last version
 #include "contiki.h"
 #include "dev/button-hal.h"
 #include "coap-engine.h"
 #include "dev/leds.h"
 #include "os/sys/log.h"
 #include "sys/etimer.h"
+#include "sys/ctimer.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
@@ -12,6 +14,8 @@
 #define LOG_LEVEL LOG_LEVEL_INFO
 #define SENSOR_NAME "anode_0"
 #define DOUBLE_PRESS_INTERVAL (CLOCK_SECOND/2)
+#define WATCHDOG_TIMEOUT (180 * CLOCK_SECOND) 
+
 
 PROCESS(led_blink_process,"led blink");
 PROCESS(actuator_node, "Actuator Node");
@@ -19,16 +23,33 @@ AUTOSTART_PROCESSES(&actuator_node,&led_blink_process);
 
 //Global variables
 static bool pump_active=false;
+static struct ctimer watchdog_timer;
 static bool alarm_active=false;
 extern coap_resource_t pump_resource;
 extern coap_resource_t alarm_resource;
 
+static void watchdog_timeout_callback(void *ptr) {
+    if(!alarm_active) {
+        alarm_active=true;
+        leds_off(LEDS_GREEN);
+        leds_on(LEDS_RED);
+        LOG_WARN("[ACTUATOR] WATCHDOG TIMEOUT: No signal from client! Alarm activated!\n");
+    }
+    ctimer_set(&watchdog_timer, WATCHDOG_TIMEOUT, watchdog_timeout_callback, NULL);
+}
+static void reset_watchdog(void) {
+    ctimer_set(&watchdog_timer, WATCHDOG_TIMEOUT, watchdog_timeout_callback, NULL);
+    LOG_INFO("[ACTUATOR] Watchdog timer reset\n");
+}
+
 static void res_alarm_get_handler(coap_message_t *request, coap_message_t *response,uint8_t *buffer, uint16_t preferred_size, int32_t *offset){
+    reset_watchdog();
     int len = snprintf((char *)buffer, preferred_size,"{\"alarm\": \"%s\"}",alarm_active?"ON":"OFF");
     coap_set_header_content_format(response, TEXT_PLAIN);
     coap_set_payload(response, buffer, len);
 }
 static void res_alarm_put_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset) {
+    reset_watchdog();
     const uint8_t *payload = NULL;
     int len = coap_get_payload(request, &payload);
 
@@ -58,11 +79,13 @@ static void res_alarm_put_handler(coap_message_t *request, coap_message_t *respo
     }
 }
 static void res_pump_get_handler(coap_message_t *request, coap_message_t *response,uint8_t *buffer, uint16_t preferred_size, int32_t *offset){
+    reset_watchdog();
     int len = snprintf((char *)buffer, preferred_size,"{\"pump\": \"%s\"}",pump_active?"ON":"OFF");
     coap_set_header_content_format(response, TEXT_PLAIN);
     coap_set_payload(response, buffer,len);
 }
 static void res_pump_put_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset) {
+    reset_watchdog();
     const uint8_t *payload = NULL;
     int len = coap_get_payload(request, &payload);
 
@@ -101,6 +124,7 @@ static void deactivate_alarm_manual(void){
     if(!alarm_active){
         return;
     }
+    reset_watchdog();
     alarm_active=false;
     leds_off(LEDS_RED);
     leds_on(LEDS_GREEN);
@@ -147,6 +171,7 @@ PROCESS_THREAD(actuator_node,ev,data){
     leds_on(LEDS_GREEN);
     coap_activate_resource(&alarm_resource,"alarm");
     coap_activate_resource(&pump_resource,"pump");
+    reset_watchdog();
     while(1){
         PROCESS_WAIT_EVENT();
         if(ev==button_hal_release_event){
@@ -176,5 +201,7 @@ PROCESS_THREAD(actuator_node,ev,data){
     }
     PROCESS_END();
 }
+
+
 
 
