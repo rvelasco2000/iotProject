@@ -24,6 +24,19 @@ SPO2_DANGER=85
 WINDOW_SIZE=5
 CONFIRM_COUNT=4
 
+# Idle-observation watchdog: if we haven't heard anything at all in
+# (last known reporting interval * IDLE_TIMEOUT_MULTIPLIER) seconds, the
+# sensor's CoAP engine has most likely silently dropped our observer (e.g.
+# after a confirmable notification exhausted retransmissions during a real
+# network blip) ÔÇö that failure mode raises no exception on our end, so we
+# have to notice it by absence and force a resubscribe. The interval is
+# tracked dynamically per-patient because the sensor drops from a 30s
+# reporting interval to a 5s one in panic mode, and we want to notice a
+# dropped observer just as fast during the readings that matter most.
+IDLE_TIMEOUT_MULTIPLIER = 3
+IDLE_TIMEOUT_MIN = 10        # floor, seconds ÔÇö avoid reconnect spam on jitter
+IDLE_TIMEOUT_DEFAULT = 30    # used before we've received a first packet
+
 class PatientState:
     def __init__(self, patient_name):
         self.patient_name = patient_name
@@ -167,10 +180,16 @@ def load_configuration(filename="config.json"):
     with open(filename, "r") as f:
         return json.load(f)
 
-async def write_to_influx(write_api, bucket, org, patient_name, cbor_data, reception_time):
+async def write_to_influx(write_api, bucket, org, patient_name, cbor_data, reception_time,payload_size):
     try:
         vitals_list = extract_vitals(cbor_data)
         sensor_bn = str(cbor_data.get('bn', 'unknown'))
+        size_point = Point("network_metrics") \
+            .tag("patient_name", patient_name) \
+            .tag("sensor_bn", sensor_bn) \
+            .time(reception_time) \
+            .field("payload_size_bytes", payload_size)
+        await write_api.write(bucket="payload", org=org, record=size_point)
         interval=int(cbor_data.get('interval', 30))
         total_readings=len(vitals_list)
         historical_time = reception_time
@@ -220,6 +239,7 @@ async def observe_sensor(protocol, app_name, sensor_id, patient_name, ipv6, writ
     resource_path = "vital_signs"
     uri = f"coap://[{ipv6}]/{resource_path}"
     state = patient_states.setdefault(patient_name, PatientState(patient_name))
+    last_known_interval = IDLE_TIMEOUT_DEFAULT
 
     try:
         await asyncio.wait_for(
@@ -230,6 +250,7 @@ async def observe_sensor(protocol, app_name, sensor_id, patient_name, ipv6, writ
         print(f"[HYDRATION WARNING] Timeout while fetching data for {patient_name}")
 
     async def handle_packet(payload, label):
+        nonlocal last_known_interval
         if len(payload) == 0:
             return
         timezone_italy = ZoneInfo("Europe/Rome")
@@ -239,10 +260,11 @@ async def observe_sensor(protocol, app_name, sensor_id, patient_name, ipv6, writ
         except Exception as e:
             print(f"[CBOR ERROR] Payload malformato da {patient_name} ignorato: {e}")
             return
+        last_known_interval = int(cbor_data.get('interval', last_known_interval))
         print(f"\n=== {label} [{app_name}] ===")
         print(f"Patient: {patient_name} (ID: {sensor_id}) | Received at: {reception_time}")
         print(f"Decoded CBOR: {json.dumps(cbor_data, indent=2)}")
-        await write_to_influx(write_api, influx_bucket, influx_org, patient_name, cbor_data, reception_time)
+        await write_to_influx(write_api, influx_bucket, influx_org, patient_name, cbor_data, reception_time, len(payload))
         readings = extract_vitals(cbor_data)
         if len(readings) > 1:
             print(f"[BUFFER] Packet with {len(readings)} buffered readings received from {patient_name}")
@@ -275,11 +297,34 @@ async def observe_sensor(protocol, app_name, sensor_id, patient_name, ipv6, writ
                 print(f"[OBSERVE] Observation active for {patient_name}, waiting for notifications...")
                 await handle_packet(first_response.payload, "FIRST RESPONSE")
 
-                # Instant watchdog for broken block-wise transfers
+                # Watchdog for broken block-wise transfers, plus an idle
+                # watchdog: if the sensor's engine silently drops our
+                # observer server-side, aiocoap just stops yielding
+                # anything ÔÇö no exception, no signal at all ÔÇö so we detect
+                # it by timing out on "too long since the last notification",
+                # scaled to whatever reporting interval the sensor is
+                # currently using (30s stable / 5s panic mode).
+                observation_iter = pr.observation.__aiter__()
                 try:
-                    async for packet in pr.observation:
+                    while True:
+                        idle_timeout = max(IDLE_TIMEOUT_MIN, last_known_interval * IDLE_TIMEOUT_MULTIPLIER)
+                        try:
+                            packet = await asyncio.wait_for(
+                                observation_iter.__anext__(),
+                                timeout=idle_timeout,
+                            )
+                        except StopAsyncIteration:
+                            break
                         await handle_packet(packet.payload, "NOTIFICATION")
-                except (aiocoap.error.RequestTimedOut, aiocoap.error.NetworkError, asyncio.TimeoutError) as e:
+                except asyncio.TimeoutError:
+                    print(f"[WATCHDOG] No notification from {patient_name} in {idle_timeout}s "
+                          f"(last known reporting interval: {last_known_interval}s) ÔÇö observer likely "
+                          f"dropped server-side after a network blip. Resubscribing...")
+                    if pr is not None:
+                        pr.observation.cancel()
+                    await asyncio.sleep(1) # Brief stabilization pause
+                    continue
+                except (aiocoap.error.RequestTimedOut, aiocoap.error.NetworkError) as e:
                     print(f"[WATCHDOG] Transfer broken by network blip for {patient_name}: {e}. Reconnecting immediately...")
                     if pr is not None:
                         pr.observation.cancel()
