@@ -1,3 +1,4 @@
+#last version
 import asyncio
 import signal
 from aiocoap import *
@@ -24,18 +25,10 @@ SPO2_DANGER=85
 WINDOW_SIZE=5
 CONFIRM_COUNT=4
 
-# Idle-observation watchdog: if we haven't heard anything at all in
-# (last known reporting interval * IDLE_TIMEOUT_MULTIPLIER) seconds, the
-# sensor's CoAP engine has most likely silently dropped our observer (e.g.
-# after a confirmable notification exhausted retransmissions during a real
-# network blip) ÔÇö that failure mode raises no exception on our end, so we
-# have to notice it by absence and force a resubscribe. The interval is
-# tracked dynamically per-patient because the sensor drops from a 30s
-# reporting interval to a 5s one in panic mode, and we want to notice a
-# dropped observer just as fast during the readings that matter most.
+
 IDLE_TIMEOUT_MULTIPLIER = 3
-IDLE_TIMEOUT_MIN = 10        # floor, seconds ÔÇö avoid reconnect spam on jitter
-IDLE_TIMEOUT_DEFAULT = 30    # used before we've received a first packet
+IDLE_TIMEOUT_MIN = 10       
+IDLE_TIMEOUT_DEFAULT = 30    
 
 class PatientState:
     def __init__(self, patient_name):
@@ -258,7 +251,7 @@ async def observe_sensor(protocol, app_name, sensor_id, patient_name, ipv6, writ
         try:
             cbor_data = cbor2.loads(payload)
         except Exception as e:
-            print(f"[CBOR ERROR] Payload malformato da {patient_name} ignorato: {e}")
+            print(f"[CBOR ERROR] Payload malformed from {patient_name} ignored: {e}")
             return
         last_known_interval = int(cbor_data.get('interval', last_known_interval))
         print(f"\n=== {label} [{app_name}] ===")
@@ -297,13 +290,6 @@ async def observe_sensor(protocol, app_name, sensor_id, patient_name, ipv6, writ
                 print(f"[OBSERVE] Observation active for {patient_name}, waiting for notifications...")
                 await handle_packet(first_response.payload, "FIRST RESPONSE")
 
-                # Watchdog for broken block-wise transfers, plus an idle
-                # watchdog: if the sensor's engine silently drops our
-                # observer server-side, aiocoap just stops yielding
-                # anything ÔÇö no exception, no signal at all ÔÇö so we detect
-                # it by timing out on "too long since the last notification",
-                # scaled to whatever reporting interval the sensor is
-                # currently using (30s stable / 5s panic mode).
                 observation_iter = pr.observation.__aiter__()
                 try:
                     while True:
@@ -318,17 +304,17 @@ async def observe_sensor(protocol, app_name, sensor_id, patient_name, ipv6, writ
                         await handle_packet(packet.payload, "NOTIFICATION")
                 except asyncio.TimeoutError:
                     print(f"[WATCHDOG] No notification from {patient_name} in {idle_timeout}s "
-                          f"(last known reporting interval: {last_known_interval}s) ÔÇö observer likely "
+                          f"(last known reporting interval: {last_known_interval}s) observer likely "
                           f"dropped server-side after a network blip. Resubscribing...")
                     if pr is not None:
                         pr.observation.cancel()
-                    await asyncio.sleep(1) # Brief stabilization pause
+                    await asyncio.sleep(1) 
                     continue
                 except (aiocoap.error.RequestTimedOut, aiocoap.error.NetworkError) as e:
                     print(f"[WATCHDOG] Transfer broken by network blip for {patient_name}: {e}. Reconnecting immediately...")
                     if pr is not None:
                         pr.observation.cancel()
-                    await asyncio.sleep(1) # Brief stabilization pause
+                    await asyncio.sleep(1) 
                     continue
 
                 print(f"[OBSERVE] Observation ended for {patient_name}, reconnecting in {retry_delay}s...")
@@ -348,10 +334,6 @@ async def observe_sensor(protocol, app_name, sensor_id, patient_name, ipv6, writ
                         pass
                 await asyncio.sleep(retry_delay)
     except asyncio.CancelledError:
-        # Clean shutdown (e.g. Ctrl+C handled in main()): explicitly cancel
-        # the observation so aiocoap sends a deregistration to the sensor
-        # instead of just disappearing and leaving a stale observer
-        # registered on the node for the next reconnect to collide with.
         if current_pr is not None:
             try:
                 current_pr.observation.cancel()
@@ -432,8 +414,6 @@ async def main():
         try:
             loop.add_signal_handler(signal.SIGINT, _handle_sigint)
         except NotImplementedError:
-            # e.g. platforms without add_signal_handler support (Windows);
-            # Ctrl+C will fall back to the default abrupt KeyboardInterrupt.
             pass
 
         try:

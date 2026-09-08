@@ -1,3 +1,4 @@
+//last version
 #include "contiki.h"
 #include "cbor.h"
 #include "dev/leds.h"
@@ -134,12 +135,6 @@ static void res_get_handler(coap_message_t *request, coap_message_t *response, u
     static uint8_t full_payload[1024];
 
     if (*offset == 0) {
-        // Marks a transfer as busy regardless of whether this block was
-        // triggered by a real client GET or by an internal push notification
-        // (request == NULL). Notifications are still real transfers: gating
-        // this on request != NULL let a periodic re-trigger rebuild
-        // full_payload/full_len out from under an in-flight notification
-        // that was still waiting on the client's Block2 continuation.
         transfer_in_progress = true;
 
         if(buffer_count == 0) {
@@ -154,7 +149,7 @@ static void res_get_handler(coap_message_t *request, coap_message_t *response, u
             cbor_write_text(&state, "bn", strlen("bn"));
             cbor_write_text(&state, SENSOR_NAME, strlen(SENSOR_NAME));
             
-            // Renamed "int" to "interval"
+            
             cbor_write_text(&state, "interval", strlen("interval"));
             cbor_write_unsigned(&state, interval / CLOCK_SECOND);
             
@@ -494,4 +489,5 @@ PROCESS_THREAD(sensor_node, ev, data) {
     }
     PROCESS_END();
 }
+
 
